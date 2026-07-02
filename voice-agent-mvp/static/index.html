@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-row">
+        <div>
+          <h1>🎙️ Voice Agent Studio</h1>
+          <p class="sub">Build, save, and call AI voice agents — your knowledge base, bookings, and history.</p>
+        </div>
+        <div id="userBox" class="user-box hidden">
+          <span id="userEmail"></span>
+          <button id="logoutBtn" class="small">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============ AUTH ============ -->
+    <section id="authScreen" class="hidden">
+      <div class="card auth-card">
+        <h2 id="authTitle">Log in</h2>
+        <p id="authErr" class="auth-err"></p>
+        <label>Email <input id="authEmail" type="email" autocomplete="username" /></label>
+        <label>Password <input id="authPassword" type="password" autocomplete="current-password" /></label>
+        <button id="authSubmit" class="primary">Log in</button>
+        <p class="hint">
+          <span id="authSwitchText">New here?</span>
+          <a href="#" id="authSwitch">Create an account</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ APP ============ -->
+    <div id="appRoot" class="hidden">
+      <div id="unsupported" class="warn hidden">
+        ⚠️ Calls need <b>Google Chrome</b> or <b>Microsoft Edge</b>. You can still edit agents in any browser.
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="dashboard">
+        <div class="dash-head">
+          <h2>Your agents</h2>
+          <button id="newAgentBtn" class="primary">+ New agent</button>
+        </div>
+        <div id="agentList" class="agent-list"></div>
+      </section>
+
+      <!-- AGENT VIEW -->
+      <section id="agentView" class="hidden">
+        <button id="backBtn" class="link">← All agents</button>
+        <div class="tabs">
+          <button class="tab active" data-tab="setup">Setup</button>
+          <button class="tab" data-tab="knowledge">Knowledge</button>
+          <button class="tab" data-tab="call">Call</button>
+          <button class="tab" data-tab="history">History</button>
+          <button class="tab" data-tab="bookings">Bookings</button>
+        </div>
+
+        <!-- Setup -->
+        <div id="tab-setup" class="tab-panel card">
+          <div class="card-head">
+            <h2 id="editorTitle">New agent</h2>
+            <div class="card-actions">
+              <button id="saveBtn" class="primary">Save</button>
+              <button id="deleteBtn" class="danger">Delete</button>
+            </div>
+          </div>
+          <label>Agent name <input id="name" type="text" /></label>
+          <label>System prompt (personality &amp; job)<textarea id="system" rows="4"></textarea></label>
+          <label>Opening greeting<input id="greeting" type="text" /></label>
+          <div class="row">
+            <label>Voice <select id="voice"></select></label>
+            <label>Speed <input id="rate" type="range" min="0.7" max="1.4" step="0.1" value="1.0" /></label>
+            <label>Language <select id="lang">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="en-IN">English (India)</option>
+              <option value="hi-IN">Hindi (India)</option>
+            </select></label>
+          </div>
+          <div class="checks">
+            <label class="check"><input id="use_knowledge" type="checkbox" /> Use knowledge base</label>
+            <label class="check"><input id="tools_enabled" type="checkbox" /> Capture bookings/leads</label>
+            <label class="check"><input id="barge_in" type="checkbox" checked /> Allow barge-in (interrupt while speaking)</label>
+          </div>
+          <label>Booking webhook URL (optional) — POSTs each captured booking as JSON
+            <input id="booking_webhook" type="text" placeholder="https://hooks.zapier.com/… or your endpoint" />
+          </label>
+          <button id="testWebhookBtn" class="small">Send test booking</button>
+          <p id="saveHint" class="hint"></p>
+        </div>
+
+        <!-- Knowledge -->
+        <div id="tab-knowledge" class="tab-panel card hidden">
+          <h2>Knowledge base</h2>
+          <p id="kbHint" class="hint"></p>
+          <div class="kb-row">
+            <input id="docFile" type="file" accept=".txt,.md,.pdf" />
+            <button id="uploadFileBtn">Upload file</button>
+          </div>
+          <label style="margin-top:10px;">Or paste text<textarea id="docText" rows="3" placeholder="Paste an FAQ, price list, policy…"></textarea></label>
+          <button id="uploadTextBtn">Add pasted text</button>
+          <div id="docList" class="list"></div>
+        </div>
+
+        <!-- Call -->
+        <div id="tab-call" class="tab-panel card call-card hidden">
+          <div id="status" class="status">Ready</div>
+          <button id="callBtn">📞 Start call</button>
+          <p class="hint">Save the agent first so knowledge base &amp; bookings are active.</p>
+          <div id="transcript" class="transcript"></div>
+        </div>
+
+        <!-- History -->
+        <div id="tab-history" class="tab-panel card hidden">
+          <h2>Call history</h2>
+          <p id="histHint" class="hint"></p>
+          <div id="callList" class="list"></div>
+          <div id="callDetail" class="transcript"></div>
+        </div>
+
+        <!-- Bookings -->
+        <div id="tab-bookings" class="tab-panel card hidden">
+          <h2>Captured bookings &amp; leads</h2>
+          <p id="bookHint" class="hint"></p>
+          <div id="bookingList" class="list"></div>
+        </div>
+      </section>
+    </div>
+
+    <footer>LLM via free Groq tier · STT/TTS via your browser · data stored locally in <span class="mono">agents.db</span></footer>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="call-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
