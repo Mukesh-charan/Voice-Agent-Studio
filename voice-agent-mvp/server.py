@@ -30,6 +30,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -313,6 +314,13 @@ class CallIn(BaseModel):
 
 # ============================ app ============================
 app = FastAPI(title="Voice Agent Studio")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ---- auth ----
@@ -616,6 +624,71 @@ async def chat(request: Request, background_tasks: BackgroundTasks, user: dict =
                     booking = save_booking(agent_id, call_uid, args)
                     events.append({"type": "booking_saved", "booking": booking})
                     hook = (agent.get("booking_webhook") or "").strip() if agent else ""
+                    if hook:
+                        background_tasks.add_task(fire_webhook, hook, booking_payload(agent, booking))
+                    convo.append({"role": "tool", "tool_call_id": tc["id"], "content": "Booking saved successfully."})
+                else:
+                    convo.append({"role": "tool", "tool_call_id": tc["id"], "content": "Done."})
+            resp2 = await groq_chat(convo, tools=None)
+            reply = (resp2["choices"][0]["message"].get("content") or "").strip() or \
+                "Done — I've saved that for you. Anything else?"
+        else:
+            reply = (msg.get("content") or "").strip()
+        return {"reply": reply, "events": events}
+    except RuntimeError as e:
+        return JSONResponse(status_code=502, content={"error": str(e)})
+    except httpx.RequestError as e:
+        return JSONResponse(status_code=502, content={"error": f"Could not reach LLM provider: {e}"})
+
+
+@app.post("/api/public/chat")
+async def public_chat(request: Request, background_tasks: BackgroundTasks):
+    if not API_KEY:
+        return JSONResponse(status_code=500,
+                            content={"error": "LLM_API_KEY is not set."})
+
+    body = await request.json()
+    messages = body.get("messages", [])
+    agent_id = body.get("agent_id")
+    call_uid = body.get("call_uid")
+
+    if not agent_id:
+        return JSONResponse(status_code=400, content={"error": "agent_id is required."})
+
+    with db() as conn:
+        row = conn.execute("SELECT * FROM agents WHERE id = ?", (agent_id,)).fetchone()
+        if not row:
+            return JSONResponse(status_code=404, content={"error": "Agent not found."})
+        agent = row_to_dict(row)
+
+    system = agent.get("system_prompt") or DEFAULT_SYSTEM
+
+    if agent.get("use_knowledge"):
+        last_user = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
+        ctx = retrieve_context(agent_id, last_user)
+        if ctx:
+            system += ("\n\nKNOWLEDGE BASE — use only this to answer factual questions. "
+                       "If the answer isn't here, say you don't have that information:\n"
+                       + "\n---\n".join(ctx))
+
+    tools = [BOOKING_TOOL] if agent.get("tools_enabled") else None
+    convo = [{"role": "system", "content": system}] + messages
+
+    try:
+        resp = await groq_chat(convo, tools=tools)
+        msg = resp["choices"][0]["message"]
+        events = []
+        if msg.get("tool_calls"):
+            convo.append(msg)
+            for tc in msg["tool_calls"]:
+                if tc.get("function", {}).get("name") == "save_booking":
+                    try:
+                        args = json.loads(tc["function"].get("arguments") or "{}")
+                    except json.JSONDecodeError:
+                        args = {}
+                    booking = save_booking(agent_id, call_uid, args)
+                    events.append({"type": "booking_saved", "booking": booking})
+                    hook = (agent.get("booking_webhook") or "").strip()
                     if hook:
                         background_tasks.add_task(fire_webhook, hook, booking_payload(agent, booking))
                     convo.append({"role": "tool", "tool_call_id": tc["id"], "content": "Booking saved successfully."})

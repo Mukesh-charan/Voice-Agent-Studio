@@ -118,8 +118,24 @@ function switchTab(name) {
   if (name === "knowledge") loadDocuments();
   if (name === "history") loadCalls();
   if (name === "bookings") loadBookings();
+  if (name === "embed") {
+    const textEl = $("embedScriptText");
+    if (currentAgentId) {
+      const url = window.location.origin + "/widget.js";
+      textEl.value = `<script src="${url}" data-agent-id="${currentAgentId}"></script>`;
+    } else {
+      textEl.value = "Please save the agent first to get your embed script.";
+    }
+  }
 }
 document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
+
+$("copyEmbedBtn").onclick = () => {
+  const textEl = $("embedScriptText");
+  textEl.select();
+  document.execCommand("copy");
+  toast("Copied to clipboard!");
+};
 
 // ----------------------------- dashboard -----------------------------
 async function showDashboard() {
