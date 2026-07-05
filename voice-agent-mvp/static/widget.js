@@ -169,7 +169,7 @@
   // Create UI
   const btn = document.createElement('button');
   btn.className = 'vas-widget-btn';
-  btn.innerHTML = '💬';
+  btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
   document.body.appendChild(btn);
 
   const win = document.createElement('div');
@@ -221,6 +221,8 @@
     bodyEl.scrollTop = bodyEl.scrollHeight;
   }
 
+  const callUid = 'widget-' + Math.random().toString(36).substring(2, 10) + '-' + Date.now();
+
   formEl.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = inputEl.value.trim();
@@ -240,6 +242,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agent_id: parseInt(agentId),
+          call_uid: callUid,
           messages: messages
         })
       });

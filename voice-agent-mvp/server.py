@@ -699,6 +699,18 @@ async def public_chat(request: Request, background_tasks: BackgroundTasks):
                 "Done — I've saved that for you. Anything else?"
         else:
             reply = (msg.get("content") or "").strip()
+            
+        if call_uid:
+            full_transcript = messages + [{"role": "assistant", "content": reply}]
+            with db() as conn:
+                existing = conn.execute("SELECT id FROM calls WHERE call_uid = ?", (call_uid,)).fetchone()
+                if existing:
+                    conn.execute("UPDATE calls SET num_turns = ?, transcript = ?, ended_at = ? WHERE call_uid = ?",
+                                 (len(full_transcript), json.dumps(full_transcript), now_iso(), call_uid))
+                else:
+                    conn.execute("INSERT INTO calls (agent_id, call_uid, started_at, ended_at, num_turns, transcript) VALUES (?,?,?,?,?,?)",
+                                 (agent_id, call_uid, now_iso(), now_iso(), len(full_transcript), json.dumps(full_transcript)))
+                                 
         return {"reply": reply, "events": events}
     except RuntimeError as e:
         return JSONResponse(status_code=502, content={"error": str(e)})
