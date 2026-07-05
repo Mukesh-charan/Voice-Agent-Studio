@@ -284,7 +284,7 @@ async function viewCall(id) {
   (c.transcript || []).forEach((t) => {
     const div = document.createElement("div"); div.className = "turn " + (t.role === "user" ? "user" : "agent");
     div.innerHTML = `<span class="who">${t.role === "user" ? "Caller" : "Agent"}</span>`;
-    const m = document.createElement("span"); m.className = "msg"; m.textContent = t.text;
+    const m = document.createElement("span"); m.className = "msg"; m.textContent = t.text || t.content;
     div.appendChild(m); box.appendChild(div);
   });
   box.scrollIntoView({ behavior: "smooth", block: "nearest" });
