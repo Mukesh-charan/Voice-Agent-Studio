@@ -118,8 +118,24 @@ function switchTab(name) {
   if (name === "knowledge") loadDocuments();
   if (name === "history") loadCalls();
   if (name === "bookings") loadBookings();
+  if (name === "embed") {
+    const textEl = $("embedScriptText");
+    if (currentAgentId) {
+      const url = window.location.origin + "/widget.js";
+      textEl.value = `<script src="${url}" data-agent-id="${currentAgentId}"></script>`;
+    } else {
+      textEl.value = "Please save the agent first to get your embed script.";
+    }
+  }
 }
 document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => switchTab(t.dataset.tab)));
+
+$("copyEmbedBtn").onclick = () => {
+  const textEl = $("embedScriptText");
+  textEl.select();
+  document.execCommand("copy");
+  toast("Copied to clipboard!");
+};
 
 // ----------------------------- dashboard -----------------------------
 async function showDashboard() {
@@ -268,7 +284,7 @@ async function viewCall(id) {
   (c.transcript || []).forEach((t) => {
     const div = document.createElement("div"); div.className = "turn " + (t.role === "user" ? "user" : "agent");
     div.innerHTML = `<span class="who">${t.role === "user" ? "Caller" : "Agent"}</span>`;
-    const m = document.createElement("span"); m.className = "msg"; m.textContent = t.text;
+    const m = document.createElement("span"); m.className = "msg"; m.textContent = t.text || t.content;
     div.appendChild(m); box.appendChild(div);
   });
   box.scrollIntoView({ behavior: "smooth", block: "nearest" });
