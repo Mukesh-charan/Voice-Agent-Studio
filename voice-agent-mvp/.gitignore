@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .env
 agents.db
+*_backup.*
+*_dump*.txt
+*.tmp
+graphify-out/

@@ -56,7 +56,7 @@ bookings into emails, calendar events, or spreadsheet rows — all on free tiers
 ## Deploy it (so others can use it)
 
 Browser speech needs a **secure context**, so deploy over **HTTPS** (these hosts give it
-automatically). A `Dockerfile` is included; the app honours `$PORT` and binds `0.0.0.0`.
+automatically). The app honours `$PORT` and binds `0.0.0.0`.
 
 **Option A — quick share via tunnel (no hosting account):**
 ```powershell
@@ -65,15 +65,14 @@ uvicorn server:app --port 8000      # in one terminal
 cloudflared tunnel --url http://localhost:8000     # gives an https URL
 ```
 
-**Option B — free host (Render / Fly.io / Railway):**
+**Option B — host (Render / Railway / VPS):**
 1. Push this folder to a Git repo.
-2. Create a web service from the repo (it auto-detects the `Dockerfile`).
+2. Create a Python web service (start command: `uvicorn server:app --host 0.0.0.0 --port $PORT`).
 3. Set env vars: `LLM_API_KEY`, `SESSION_COOKIE_SECURE=true`.
 4. Deploy → you get an `https://…` URL anyone can use.
 
-> ⚠️ **Data persistence:** SQLite lives in `agents.db` inside the container. On hosts with
-> an **ephemeral filesystem**, that resets on each redeploy. For durable data, attach a
-> **persistent disk/volume** (Render/Fly support this) or move to Postgres later.
+> ⚠️ **Data persistence:** SQLite lives in `agents.db`. On hosts with an ephemeral filesystem,
+> that resets on each redeploy. For durable data, use persistent storage or migrate to PostgreSQL.
 
 ## Switching the brain (still free, no code change)
 

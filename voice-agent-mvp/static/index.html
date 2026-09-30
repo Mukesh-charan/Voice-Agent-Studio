@@ -60,6 +60,8 @@
           <button class="tab" data-tab="call">Call</button>
           <button class="tab" data-tab="history">History</button>
           <button class="tab" data-tab="bookings">Bookings</button>
+          <button class="tab" data-tab="guardrails">🛡️ Guardrails &amp; Roles</button>
+          <button class="tab" data-tab="google">🌐 Google Integrations</button>
           <button class="tab" data-tab="embed">Embed</button>
         </div>
 
@@ -73,7 +75,11 @@
             </div>
           </div>
           <label>Agent name <input id="name" type="text" /></label>
-          <label>System prompt (personality &amp; job)<textarea id="system" rows="4"></textarea></label>
+          <label>
+            System prompt (personality &amp; job)
+            <button id="optimizePromptBtn" class="small" style="float:right;">✨ Quantum Optimize</button>
+            <textarea id="system" rows="4"></textarea>
+          </label>
           <label>Opening greeting<input id="greeting" type="text" /></label>
           <div class="row">
             <label>Voice <select id="voice"></select></label>
@@ -102,7 +108,7 @@
           <h2>Knowledge base</h2>
           <p id="kbHint" class="hint"></p>
           <div class="kb-row">
-            <input id="docFile" type="file" accept=".txt,.md,.pdf" />
+            <input id="docFile" type="file" accept=".txt,.md,.pdf,.docx,.csv,.json" />
             <button id="uploadFileBtn">Upload file</button>
           </div>
           <label style="margin-top:10px;">Or paste text<textarea id="docText" rows="3" placeholder="Paste an FAQ, price list, policy…"></textarea></label>
@@ -113,6 +119,14 @@
         <!-- Call -->
         <div id="tab-call" class="tab-panel card call-card hidden">
           <div id="status" class="status">Ready</div>
+          <div id="sttBadge" style="font-size:12px; color:var(--muted); margin-bottom:10px;">⚡ STT: <strong>Local Faster-Whisper (CUDA Private Offline)</strong> · 🔊 TTS: <strong>Studio Neural TTS</strong></div>
+          <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; margin:0; font-weight:600;">🎙️ STT Engine:</label>
+            <select id="sttEngineSelect" style="padding:4px 8px; font-size:12px; border-radius:6px; background:var(--card); color:inherit; border:1px solid var(--border);">
+              <option value="local" selected>⚡ Local Faster-Whisper (CUDA Offline / Zero Echo)</option>
+              <option value="browser">🌐 Web Speech API (Chrome Cloud)</option>
+            </select>
+          </div>
           <button id="callBtn">📞 Start call</button>
           <p class="hint">Save the agent first so knowledge base &amp; bookings are active.</p>
           <div id="transcript" class="transcript"></div>
@@ -128,9 +142,150 @@
 
         <!-- Bookings -->
         <div id="tab-bookings" class="tab-panel card hidden">
-          <h2>Captured bookings &amp; leads</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>Captured bookings &amp; leads</h2>
+          </div>
           <p id="bookHint" class="hint"></p>
           <div id="bookingList" class="list"></div>
+        </div>
+
+        <!-- Guardrails & Roles (RBAC) -->
+        <div id="tab-guardrails" class="tab-panel card hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>🛡️ Guardrails &amp; Access Control (RBAC)</h2>
+            <div id="myRoleBadge" class="role-badge">Role: Owner</div>
+          </div>
+          <p id="guardrailHint" class="hint"></p>
+
+          <!-- Guardrail Sensitive Data Abstraction Preview -->
+          <div class="guardrail-banner">
+            <div class="guardrail-banner-head">
+              <strong>🔒 Booked Room Privacy &amp; Data Abstraction</strong>
+              <span class="status-pill active">ACTIVE</span>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:6px 0 10px;">
+              Lower-tier roles (Receptionists &amp; Viewers) automatically receive abstracted guest and room information.
+              Owners and Managers can view complete unredacted reservation files.
+            </p>
+            <div class="abstraction-preview-grid">
+              <div class="preview-box">
+                <span class="preview-tag owner">Owner / Manager View</span>
+                <div class="preview-item">👤 Name: <strong id="previewOwnerName">Sarah Connor</strong></div>
+                <div class="preview-item">📱 Phone: <strong id="previewOwnerPhone">+1 (415) 888-9999</strong></div>
+                <div class="preview-item">🏨 Room / Notes: <strong>Suite 402 (VIP Doctor Consultation)</strong></div>
+              </div>
+              <div class="preview-box">
+                <span class="preview-tag receptionist">Receptionist / Viewer View (Abstracted)</span>
+                <div class="preview-item">👤 Name: <strong>S**** C*****</strong> <small class="text-green">✓ Masked</small></div>
+                <div class="preview-item">📱 Phone: <strong>••••-•••-9999</strong> <small class="text-green">✓ Masked</small></div>
+                <div class="preview-item">🏨 Room / Notes: <em style="color:#f5a623;">[Confidential Room Notes — Restricted]</em></div>
+              </div>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:8px;">
+              🛡️ <strong>In-Call Anti-Exfiltration Shield:</strong> Deterministically blocks conversational attempts by callers to query other guests' rooms or extract database records.
+            </div>
+          </div>
+
+          <!-- RBAC Team Members Management -->
+          <div style="margin-top:20px;">
+            <div class="card-head" style="margin-bottom:10px;">
+              <h3 style="font-size:15px; margin:0;">👥 Agent Access &amp; Member Roles</h3>
+              <span id="memberCountBadge" style="font-size:12px; color:var(--muted);"></span>
+            </div>
+            
+            <div id="addMemberSection" class="add-member-form">
+              <input id="newMemberEmail" type="email" placeholder="colleague@clinic.com or team email" style="flex:2;" />
+              <select id="newMemberRole" style="flex:1;">
+                <option value="manager">Manager (Full Bookings, KB edit)</option>
+                <option value="receptionist" selected>Receptionist (Masked PII, Call)</option>
+                <option value="viewer">Viewer (Read-only)</option>
+              </select>
+              <button id="addMemberBtn" class="primary small" style="white-space:nowrap;">+ Add Member</button>
+            </div>
+
+            <div id="memberList" class="list" style="margin-top:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Google Integrations -->
+        <div id="tab-google" class="tab-panel card hidden">
+          <h2>🌐 Google Suite Integrations</h2>
+          <p id="googleHint" class="hint"></p>
+
+          <!-- Google Calendar & Meet -->
+          <div class="google-card">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📅</span>
+                <strong>Google Calendar &amp; Google Meet</strong>
+              </div>
+              <button id="testGCalBtn" class="small">Test Calendar Connection</button>
+            </div>
+            <label style="margin-top:8px;">Google Calendar ID
+              <input id="google_calendar_id" type="text" placeholder="primary or your-calendar-id@group.calendar.google.com" />
+            </label>
+            <div class="checks">
+              <label class="check">
+                <input id="google_auto_sync_calendar" type="checkbox" /> Automatically add confirmed voice bookings to Google Calendar
+              </label>
+              <label class="check">
+                <input id="google_enable_meet" type="checkbox" /> Automatically generate Google Meet video links for bookings
+              </label>
+            </div>
+          </div>
+
+          <!-- Google Sheets -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📊</span>
+                <strong>Google Sheets Live Logging</strong>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="testGSheetBtn" class="small">Test Sheet Row</button>
+                <button id="syncAllSheetsBtn" class="small">Sync All Bookings</button>
+              </div>
+            </div>
+            <label style="margin-top:8px;">Google Spreadsheet ID or URL
+              <input id="google_sheet_id" type="text" placeholder="Spreadsheet ID or https://docs.google.com/spreadsheets/d/1BxiM.../edit" />
+            </label>
+            <div class="checks">
+              <label class="check">
+                <input id="google_auto_sync_sheets" type="checkbox" /> Automatically append every new booking/lead as a new row in Google Sheets
+              </label>
+            </div>
+          </div>
+
+          <!-- Google Docs Knowledge Import (RAG) -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📄</span>
+                <strong>Google Docs Knowledge Ingestion (RAG)</strong>
+              </div>
+              <button id="importGDocBtn" class="small primary">📥 Import Doc to KB</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:4px 0 8px;">
+              Paste any shared Google Doc URL (FAQs, room price list, clinic handbook). We extract the text, chunk it, and index it into the agent's knowledge base.
+            </p>
+            <input id="google_doc_url" type="text" placeholder="https://docs.google.com/document/d/1BxiMVs0XRA5.../edit" />
+          </div>
+
+          <!-- Google Credentials -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🔑</span>
+                <strong>Google Cloud Credentials (Service Account / OAuth)</strong>
+              </div>
+              <button id="saveGoogleSettingsBtn" class="primary small">💾 Save Google Settings</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:4px 0 8px;">
+              Paste your Google Service Account JSON or OAuth Token JSON here to enable server-to-server cloud synchronization.
+            </p>
+            <textarea id="google_credentials_json" rows="3" placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'></textarea>
+            <p id="googleCredStatus" class="hint" style="margin-top:4px;"></p>
+          </div>
         </div>
 
         <!-- Embed -->
@@ -148,7 +303,7 @@
 
   <div id="toast" class="toast hidden"></div>
 
-  <script src="call-engine.js"></script>
-  <script src="app.js"></script>
+  <script src="call-engine.js?v=20260930_clean_echo_free"></script>
+  <script src="app.js?v=20260930_clean_echo_free"></script>
 </body>
 </html>
