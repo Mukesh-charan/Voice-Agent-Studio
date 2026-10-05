@@ -1,0 +1,93 @@
+# Voice Agent Studio — Docker Stack
+
+# Production-grade multi-service compose file.
+# Services: app (FastAPI), nginx (reverse proxy + TLS termination)
+#
+# Quick start:
+#   cp .env.example .env        # fill in LLM_API_KEY etc.
+#   docker compose up -d
+#   docker compose logs -f app
+#
+# For HTTPS, set NGINX_HOST and place certs in ./certs/ (see nginx.conf).
+
+version: "3.9"
+
+services:
+  # ── Voice Agent Studio (FastAPI/Uvicorn) ────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: voice_agent_app
+    restart: unless-stopped
+    environment:
+      - PORT=8000
+      - LLM_API_KEY=${LLM_API_KEY:-ollama}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://ollama:11434/v1}
+      - LLM_MODEL=${LLM_MODEL:-llama3.1:8b}
+      - STT_BASE_URL=${STT_BASE_URL:-http://ollama:11434/v1}
+      - STT_API_KEY=${STT_API_KEY:-ollama}
+      - STT_MODEL=${STT_MODEL:-whisper-large-v3-turbo}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-true}
+      - SESSION_SECRET=${SESSION_SECRET:-change_me_in_production}
+    volumes:
+      - app_data:/app/data        # persists agents.db
+    ports:
+      - "8000:8000"               # exposed directly; nginx proxies to this
+    depends_on:
+      - ollama
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/agents', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - internal
+
+  # ── Ollama (local LLM + Whisper STT) ────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: voice_agent_ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - internal
+    # GPU acceleration (uncomment if NVIDIA GPU available):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── Nginx reverse proxy (optional TLS termination) ──────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: voice_agent_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro       # place fullchain.pem + privkey.pem here
+    depends_on:
+      - app
+    networks:
+      - internal
+      - external
+
+volumes:
+  app_data:
+  ollama_models:
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge

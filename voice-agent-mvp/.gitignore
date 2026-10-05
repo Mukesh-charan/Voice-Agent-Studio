@@ -1,0 +1,38 @@
+# ── Runtime artifacts ───────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# ── Database (auto-created at runtime) ─────────────────────────────────────
+agents.db
+
+# ── Office temp files ────────────────────────────────────────────────────────
+*_backup.*
+*_dump*.txt
+*.tmp
+~$*
+
+# ── Generated / build artifacts ─────────────────────────────────────────────
+graphify-out/
+research/results/
+research/generated/
+research/figures/
+research/data/
+
+# ── LaTeX build artifacts ────────────────────────────────────────────────────
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# ── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,38 @@
+# ── Web framework ────────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+python-dotenv==1.0.1
+python-multipart==0.0.20
+
+# ── Document parsing ─────────────────────────────────────────────────────────
+pypdf==5.1.0
+
+# ── Quantum / optimisation stack ─────────────────────────────────────────────
+# Note: pennylane and docplex removed (not used in any code path).
+qiskit>=2.0.0
+qiskit-aer>=0.17.0
+qiskit-optimization>=0.7.0
+qiskit-algorithms>=0.4.0
+
+# ── Speech / audio ───────────────────────────────────────────────────────────
+edge-tts>=7.0.0
+# pyttsx3 removed — not used in any code path (use TTS_PROVIDER=edge or piper)
+faster-whisper>=1.0.0
+
+# ── Numerical / ML ───────────────────────────────────────────────────────────
+numpy>=1.26.0
+scipy>=1.12.0
+
+# ── Retrieval evaluation ─────────────────────────────────────────────────────
+sentence-transformers>=3.0.0
+
+# ── ASR evaluation ───────────────────────────────────────────────────────────
+jiwer>=3.0.0
+
+# ── System info (optional, used by env_capture.py) ───────────────────────────
+psutil>=6.0.0
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
