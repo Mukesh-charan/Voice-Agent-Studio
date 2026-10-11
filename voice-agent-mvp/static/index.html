@@ -63,6 +63,7 @@
           <button class="tab" data-tab="guardrails">🛡️ Guardrails &amp; Roles</button>
           <button class="tab" data-tab="google">🌐 Google Integrations</button>
           <button class="tab" data-tab="embed">Embed</button>
+          <button class="tab" data-tab="docker">🐳 Docker Appliance</button>
         </div>
 
         <!-- Setup -->
@@ -70,6 +71,7 @@
           <div class="card-head">
             <h2 id="editorTitle">New agent</h2>
             <div class="card-actions">
+              <button id="exportDockerQuickBtn" class="small btn-secondary" title="Export as on-premise Docker container appliance">🐳 Export Docker</button>
               <button id="saveBtn" class="primary">Save</button>
               <button id="deleteBtn" class="danger">Delete</button>
             </div>
@@ -294,6 +296,126 @@
           <p class="hint">Copy and paste this script tag into the bottom of your website's <code>&lt;body&gt;</code> to add a floating chat widget.</p>
           <textarea id="embedScriptText" rows="3" readonly style="width:100%; font-family:monospace; margin-top:10px; background:#f9fafb; padding:10px; border:1px solid #e5e7eb; border-radius:8px;" onclick="this.select()"></textarea>
           <button id="copyEmbedBtn" class="small" style="margin-top:10px;">Copy to clipboard</button>
+        </div>
+
+        <!-- Docker Appliance Export -->
+        <div id="tab-docker" class="tab-panel card hidden">
+          <div class="card-head">
+            <div>
+              <h2>🐳 Client Docker Appliance &amp; Model Sizing</h2>
+              <p class="sub" style="margin-top:2px;">Tailor the voice agent's STT, LLM, and TTS models to your client's hardware specs and privacy rules.</p>
+            </div>
+            <button id="downloadDockerBtn" class="primary">📦 Export Tailored Appliance (.zip)</button>
+          </div>
+
+          <!-- Sizing & Privacy Inputs -->
+          <div style="background:#131720; border:1px solid #242b38; border-radius:10px; padding:16px; margin:16px 0;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:#93c5fd; display:flex; align-items:center; gap:6px;">
+              <span>⚙️</span> Client Server Hardware &amp; Privacy Requirements
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+              <label style="margin-bottom:0;">
+                Privacy / Air-Gap Policy
+                <select id="spec_privacy">
+                  <option value="strict" selected>🔒 Strict Air-Gap (Local Only, Zero Egress)</option>
+                  <option value="cloud">⚡ Online / Hybrid Allowed (Groq, Cloud STT)</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Client GPU / VRAM
+                <select id="spec_vram">
+                  <option value="0">CPU Only (No GPU)</option>
+                  <option value="4">4 GB VRAM (RTX 3050, GTX 1660)</option>
+                  <option value="6">6 GB VRAM (RTX 4050, T4)</option>
+                  <option value="8" selected>8 GB VRAM (RTX 3060/4060, A10G)</option>
+                  <option value="12">12 GB VRAM (RTX 4070, 3060 12GB)</option>
+                  <option value="16">16 GB VRAM (RTX 4080, A5000, V100)</option>
+                  <option value="24">24+ GB VRAM (RTX 3090/4090, A100)</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Host System RAM
+                <select id="spec_ram">
+                  <option value="8">8 GB RAM</option>
+                  <option value="16" selected>16 GB RAM</option>
+                  <option value="32">32 GB RAM</option>
+                  <option value="64">64+ GB RAM</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Expected Concurrency
+                <select id="spec_calls">
+                  <option value="1" selected>1–2 Concurrent Callers</option>
+                  <option value="5">5–10 Concurrent Callers</option>
+                  <option value="20">20+ Concurrent Callers</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dynamic Recommendation Result Card -->
+          <div id="recContainer" style="background:#0f1520; border:1px solid #1e3a8a; border-radius:10px; padding:18px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+              <div>
+                <span id="recTag" class="tag" style="background:#1e3a8a; color:#93c5fd; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600;">Optimal Architecture</span>
+                <h3 id="recTitle" style="margin:6px 0 2px; font-size:16px; color:#f8fafc;">Recommended Stack</h3>
+                <p id="recPrivacy" style="margin:0; font-size:12px; color:#38bdf8;">100% Local Inference</p>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:11px; color:#94a3b8;">Est. Turn Latency</div>
+                <div id="recLatency" style="font-size:18px; font-weight:700; color:#34d399;">~380 ms</div>
+              </div>
+            </div>
+
+            <!-- 3-Pillar Model Breakdown -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin:14px 0;">
+              <!-- LLM -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🧠 Reasoning (LLM)</div>
+                <div id="recLlmName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Qwen 2.5 7B</div>
+                <div id="recLlmReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">5.2 GB VRAM · Ollama</div>
+              </div>
+
+              <!-- STT -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🎙️ Transcription (STT)</div>
+                <div id="recSttName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Whisper Large-v3-Turbo</div>
+                <div id="recSttReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">1.8 GB VRAM · CUDA float16</div>
+              </div>
+
+              <!-- TTS -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🔊 Voice Synthesis (TTS)</div>
+                <div id="recTtsName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Kokoro 82M</div>
+                <div id="recTtsReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">1.0 GB VRAM · Streaming</div>
+              </div>
+            </div>
+
+            <p id="recSummary" style="font-size:12px; color:#cbd5e1; margin:0 0 10px; line-height:1.5;">
+              Production voice standard. State-of-the-art transcription accuracy with 7B deep reasoning.
+            </p>
+
+            <!-- Alternative options -->
+            <div id="recAltsBox" style="margin-top:12px; padding-top:10px; border-top:1px solid #1e293b;">
+              <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">Alternative Configuration Options:</div>
+              <div id="recAltsList" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+          </div>
+
+          <!-- Quickstart Guide -->
+          <h3 style="margin-top:16px; margin-bottom:8px; font-size:14px;">🚀 Client Deployment Quickstart</h3>
+          <div id="dockerCommandPreview" style="background:#1e293b; color:#f8fafc; border-radius:8px; padding:14px; font-family:monospace; font-size:12px; line-height:1.6; overflow-x:auto;">
+            <span style="color:#94a3b8;"># 1. Unzip the downloaded tailored appliance</span><br/>
+            unzip voice_agent_appliance.zip &amp;&amp; cd voice_agent_appliance<br/><br/>
+            <span style="color:#94a3b8;"># 2. Launch containerized appliance</span><br/>
+            docker compose up -d --build<br/><br/>
+            <span id="dockerPullCommand" style="color:#38bdf8;">docker exec -it voice_agent_ollama ollama pull qwen2.5:7b</span><br/><br/>
+            <span style="color:#94a3b8;"># 3. Access in client browser</span><br/>
+            <span style="color:#38bdf8;">http://localhost:8000</span> (admin@appliance.local / admin123)
+          </div>
         </div>
       </section>
     </div>

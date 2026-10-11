@@ -178,6 +178,7 @@ function switchTab(name) {
   if (name === "bookings") loadBookings();
   if (name === "guardrails") loadGuardrailsAndMembers();
   if (name === "google") loadGoogleSettings();
+  if (name === "docker") fetchHardwareRecommendations();
   if (name === "embed") {
     const textEl = $("embedScriptText");
     if (currentAgentId) {
@@ -882,6 +883,115 @@ async function importGoogleDocToKB() {
   }
 }
 
+let currentTailoredModels = {
+  llm_model: "qwen2.5:7b",
+  llm_base_url: "http://ollama:11434/v1",
+  stt_model: "whisper-large-v3-turbo",
+  stt_base_url: "http://ollama:11434/v1",
+  tts_voice: "kokoro",
+  has_gpu: true,
+  privacy_strict: true
+};
+
+async function fetchHardwareRecommendations() {
+  const privacy = $("spec_privacy") ? $("spec_privacy").value === "strict" : true;
+  const vram = $("spec_vram") ? parseFloat($("spec_vram").value) : 8.0;
+  const ram = $("spec_ram") ? parseFloat($("spec_ram").value) : 16.0;
+  const calls = $("spec_calls") ? parseInt($("spec_calls").value) : 1;
+  const has_gpu = vram > 0;
+
+  try {
+    const res = await jreq("/api/recommend-models", "POST", {
+      vram_gb: vram,
+      ram_gb: ram,
+      has_gpu: has_gpu,
+      privacy_strict: privacy,
+      concurrent_calls: calls
+    });
+
+    const rec = res.recommended;
+    if (!rec) return;
+
+    currentTailoredModels = {
+      llm_model: rec.llm.model,
+      llm_base_url: rec.llm.provider === "ollama" ? "http://ollama:11434/v1" : "https://api.groq.com/openai/v1",
+      stt_model: rec.stt.model,
+      stt_base_url: rec.stt.provider.includes("local") ? "http://ollama:11434/v1" : "https://api.groq.com/openai/v1",
+      tts_voice: rec.tts.voice,
+      has_gpu: rec.has_gpu,
+      privacy_strict: privacy
+    };
+
+    if ($("recTag")) $("recTag").textContent = rec.tag;
+    if ($("recTitle")) $("recTitle").textContent = rec.title;
+    if ($("recPrivacy")) $("recPrivacy").textContent = rec.privacy;
+    if ($("recLatency")) $("recLatency").textContent = `~${rec.est_latency_ms} ms`;
+    if ($("recLlmName")) $("recLlmName").textContent = rec.llm.name;
+    if ($("recLlmReq")) $("recLlmReq").textContent = `${rec.llm.vram_req} · ${rec.llm.provider.toUpperCase()}`;
+    if ($("recSttName")) $("recSttName").textContent = rec.stt.name;
+    if ($("recSttReq")) $("recSttReq").textContent = `${rec.stt.vram_req} · ${rec.stt.provider.toUpperCase()}`;
+    if ($("recTtsName")) $("recTtsName").textContent = rec.tts.name;
+    if ($("recTtsReq")) $("recTtsReq").textContent = `${rec.tts.vram_req} · ${rec.tts.provider.toUpperCase()}`;
+    if ($("recSummary")) $("recSummary").textContent = rec.summary;
+
+    if ($("dockerPullCommand")) {
+      if (rec.llm.provider === "ollama") {
+        $("dockerPullCommand").textContent = `docker exec -it voice_agent_ollama ollama pull ${rec.llm.model}`;
+      } else {
+        $("dockerPullCommand").textContent = `# Cloud LPU pre-configured (Model: ${rec.llm.model} via Groq)`;
+      }
+    }
+
+    const altsList = $("recAltsList");
+    if (altsList) {
+      altsList.innerHTML = "";
+      (res.alternatives || []).forEach((alt) => {
+        const btn = document.createElement("button");
+        btn.className = "small btn-secondary";
+        btn.style.cssText = "font-size:11px; padding:4px 8px; margin:2px;";
+        btn.textContent = `⚡ ${alt.title} (~${alt.est_latency_ms}ms)`;
+        btn.onclick = () => {
+          currentTailoredModels.llm_model = alt.llm;
+          currentTailoredModels.stt_model = alt.stt;
+          currentTailoredModels.tts_voice = alt.tts;
+          if ($("recLlmName")) $("recLlmName").textContent = alt.llm;
+          if ($("recLatency")) $("recLatency").textContent = `~${alt.est_latency_ms} ms`;
+          if ($("recSummary")) $("recSummary").textContent = alt.tradeoff;
+          if ($("dockerPullCommand")) {
+            $("dockerPullCommand").textContent = `docker exec -it voice_agent_ollama ollama pull ${alt.llm}`;
+          }
+          toast(`Selected profile: ${alt.title}`);
+        };
+        altsList.appendChild(btn);
+      });
+    }
+  } catch (err) {
+    console.warn("Model recommendation fetch error:", err);
+  }
+}
+
+function downloadDockerAppliance() {
+  if (!currentAgentId) {
+    toast("Save the agent first before exporting.");
+    return;
+  }
+  toast(`📦 Packaging Docker appliance with ${currentTailoredModels.llm_model}...`);
+  const query = new URLSearchParams({
+    llm_model: currentTailoredModels.llm_model,
+    llm_base_url: currentTailoredModels.llm_base_url,
+    stt_model: currentTailoredModels.stt_model,
+    tts_voice: currentTailoredModels.tts_voice,
+    has_gpu: currentTailoredModels.has_gpu,
+    privacy_strict: currentTailoredModels.privacy_strict
+  });
+  const a = document.createElement("a");
+  a.href = `/api/agents/${currentAgentId}/export-docker?${query.toString()}`;
+  a.download = `voice_agent_${currentAgentId}_appliance.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 // Event listeners
 if ($("addMemberBtn")) $("addMemberBtn").onclick = addMemberItem;
 if ($("testGCalBtn")) $("testGCalBtn").onclick = testCalendar;
@@ -889,6 +999,13 @@ if ($("testGSheetBtn")) $("testGSheetBtn").onclick = testSheets;
 if ($("syncAllSheetsBtn")) $("syncAllSheetsBtn").onclick = syncAllExistingSheets;
 if ($("importGDocBtn")) $("importGDocBtn").onclick = importGoogleDocToKB;
 if ($("saveGoogleSettingsBtn")) $("saveGoogleSettingsBtn").onclick = saveGoogleConfig;
+if ($("downloadDockerBtn")) $("downloadDockerBtn").onclick = downloadDockerAppliance;
+if ($("exportDockerQuickBtn")) $("exportDockerQuickBtn").onclick = downloadDockerAppliance;
+
+// Spec inputs auto-refresh recommendation
+["spec_privacy", "spec_vram", "spec_ram", "spec_calls"].forEach((id) => {
+  if ($(id)) $(id).onchange = fetchHardwareRecommendations;
+});
 
 // ----------------------------- init -----------------------------
 async function init() {

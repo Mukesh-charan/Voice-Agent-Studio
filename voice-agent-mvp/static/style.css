@@ -34,6 +34,8 @@ button {
 button:hover { transform: translateY(-1px); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #06101f; font-weight: 600; }
 button.danger { background: transparent; border-color: var(--red); color: var(--red); }
+button.btn-secondary { background: #1e2430; border-color: #3b4252; color: #d8dee9; }
+button.btn-secondary:hover { background: #2e3440; }
 button.small { padding: 5px 11px; font-size: 13px; }
 button.link { background: none; border: none; color: var(--muted); padding: 0 0 14px; }
 button.link:hover { color: var(--text); transform: none; }

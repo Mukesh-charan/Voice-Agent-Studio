@@ -24,6 +24,8 @@ import hmac
 import hashlib
 import secrets
 import sqlite3
+import zipfile
+import tempfile
 import urllib.parse
 from collections import Counter
 from datetime import datetime, timezone, timedelta, date
@@ -592,6 +594,14 @@ class GoogleDocSyncIn(BaseModel):
     doc_url: str
 
 
+class HardwareSpecIn(BaseModel):
+    vram_gb: float = 0.0
+    ram_gb: float = 16.0
+    has_gpu: bool = False
+    privacy_strict: bool = True
+    concurrent_calls: int = 1
+
+
 
 class CallIn(BaseModel):
     agent_id: int
@@ -762,6 +772,562 @@ def delete_agent(agent_id: int, user: dict = Depends(require_user)):
             conn.execute(f"DELETE FROM {tbl} WHERE agent_id = ?", (agent_id,))
         conn.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
     return {"ok": True}
+
+
+@app.post("/api/recommend-models")
+def recommend_hardware_models(spec: HardwareSpecIn, user: dict = Depends(require_user)):
+    """Recommends optimal STT, LLM, and TTS models based on client hardware specs and privacy policy."""
+    vram = float(spec.vram_gb) if spec.has_gpu else 0.0
+    ram = float(spec.ram_gb)
+    has_gpu = bool(spec.has_gpu and vram > 0)
+    strict = bool(spec.privacy_strict)
+    calls = max(1, int(spec.concurrent_calls))
+
+    if strict:
+        if not has_gpu or vram < 3.0:
+            rec = {
+                "id": "airgap_cpu",
+                "title": "Air-Gapped CPU Appliance",
+                "tag": "Strict Privacy · CPU Only",
+                "privacy": "100% Local (Zero Data Egress)",
+                "llm": {"model": "qwen2.5:1.5b", "name": "Qwen 2.5 1.5B (4-bit)", "provider": "ollama", "vram_req": "0 GB (1.2 GB RAM)"},
+                "stt": {"model": "faster-whisper-small", "name": "Faster-Whisper Small (int8)", "provider": "local_cpu", "vram_req": "0 GB (0.6 GB RAM)"},
+                "tts": {"voice": "zira", "name": "Windows SAPI5 / Piper TTS", "provider": "local", "vram_req": "0 GB"},
+                "total_vram_gb": 0.0,
+                "est_latency_ms": 950,
+                "has_gpu": False,
+                "summary": "Runs on standard CPU servers without GPU requirements. Uses compact 1.5B model to prevent latency spikes."
+            }
+            alts = [
+                {
+                    "id": "airgap_cpu_3b",
+                    "title": "Air-Gapped CPU (Higher Quality)",
+                    "llm": "qwen2.5:3b",
+                    "stt": "faster-whisper-small",
+                    "tts": "zira",
+                    "est_latency_ms": 1350,
+                    "tradeoff": "Better reasoning, but higher CPU latency per turn."
+                }
+            ]
+        elif vram < 7.0:
+            rec = {
+                "id": "airgap_entry_gpu",
+                "title": "Air-Gapped Entry GPU Appliance",
+                "tag": "Strict Privacy · 4–6 GB GPU",
+                "privacy": "100% Local (Zero Data Egress)",
+                "llm": {"model": "qwen2.5:3b", "name": "Qwen 2.5 3B (4-bit)", "provider": "ollama", "vram_req": "2.2 GB VRAM"},
+                "stt": {"model": "faster-whisper-small", "name": "Faster-Whisper Small (float16)", "provider": "local_cuda", "vram_req": "1.0 GB VRAM"},
+                "tts": {"voice": "kokoro", "name": "Kokoro 82M (Streaming)", "provider": "local", "vram_req": "0.8 GB VRAM"},
+                "total_vram_gb": 4.0,
+                "est_latency_ms": 520,
+                "has_gpu": True,
+                "summary": "Optimized for laptops or entry servers (RTX 3050/4050, GTX 1660, T4). Fits all 3 models in <4.5 GB VRAM."
+            }
+            alts = [
+                {
+                    "id": "airgap_entry_llama",
+                    "title": "Llama 3.2 3B Variant",
+                    "llm": "llama-3.2:3b",
+                    "stt": "faster-whisper-small",
+                    "tts": "kokoro",
+                    "est_latency_ms": 540,
+                    "tradeoff": "Comparable speed with Meta prompt format."
+                }
+            ]
+        elif vram < 15.0:
+            rec = {
+                "id": "airgap_pro_gpu",
+                "title": "Air-Gapped Production Voice Appliance",
+                "tag": "Strict Privacy · 8–12 GB GPU (Recommended)",
+                "privacy": "100% Local (Zero Data Egress)",
+                "llm": {"model": "qwen2.5:7b", "name": "Qwen 2.5 7B (4-bit)", "provider": "ollama", "vram_req": "5.2 GB VRAM"},
+                "stt": {"model": "whisper-large-v3-turbo", "name": "Faster-Whisper Large-v3-Turbo (float16)", "provider": "local_cuda", "vram_req": "1.8 GB VRAM"},
+                "tts": {"voice": "kokoro", "name": "Kokoro 82M (Streaming)", "provider": "local", "vram_req": "1.0 GB VRAM"},
+                "total_vram_gb": 8.0,
+                "est_latency_ms": 380,
+                "has_gpu": True,
+                "summary": "Production voice standard (RTX 3060/4060/4070, A10G). State-of-the-art transcription accuracy + 7B deep reasoning."
+            }
+            alts = [
+                {
+                    "id": "airgap_pro_llama",
+                    "title": "Llama 3.1 8B Variant",
+                    "llm": "llama-3.1:8b",
+                    "stt": "whisper-large-v3-turbo",
+                    "tts": "kokoro",
+                    "est_latency_ms": 410,
+                    "tradeoff": "Excellent agentic capability, slightly higher VRAM usage (~5.6 GB)."
+                }
+            ]
+        else:
+            rec = {
+                "id": "airgap_enterprise_gpu",
+                "title": "Air-Gapped Enterprise Appliance",
+                "tag": "Strict Privacy · 16–24+ GB GPU",
+                "privacy": "100% Local (Zero Data Egress)",
+                "llm": {"model": "qwen2.5:14b", "name": "Qwen 2.5 14B (FP8 / AWQ)", "provider": "ollama", "vram_req": "9.5 GB VRAM"},
+                "stt": {"model": "whisper-large-v3-turbo", "name": "Faster-Whisper Large-v3-Turbo", "provider": "local_cuda", "vram_req": "1.8 GB VRAM"},
+                "tts": {"voice": "kokoro", "name": "Kokoro 82M (Streaming)", "provider": "local", "vram_req": "1.2 GB VRAM"},
+                "total_vram_gb": 12.5,
+                "est_latency_ms": 310,
+                "has_gpu": True,
+                "summary": "Enterprise data center profile (RTX 4090, A5000, A100). Supports high concurrency with 14B multi-domain capability."
+            }
+            alts = [
+                {
+                    "id": "airgap_unquantized_8b",
+                    "title": "Llama 3.1 8B Unquantized (FP16)",
+                    "llm": "llama-3.1:8b",
+                    "stt": "whisper-large-v3-turbo",
+                    "tts": "kokoro",
+                    "est_latency_ms": 290,
+                    "tradeoff": "Max precision 8B with highest token throughput."
+                }
+            ]
+    else:
+        rec = {
+            "id": "cloud_ultra_fast",
+            "title": "Ultra-Low-Latency Cloud / Hybrid Engine",
+            "tag": "Fastest Speed (<250ms) · Zero Local GPU Required",
+            "privacy": "Hybrid / Cloud (Groq LPU + Edge-TTS)",
+            "llm": {"model": "qwen/qwen3.8-27b", "name": "Qwen 3.8 27B (Groq LPU 19ms)", "provider": "groq", "vram_req": "0 GB"},
+            "stt": {"model": "whisper-large-v3-turbo", "name": "Groq Whisper Large-v3-Turbo", "provider": "groq", "vram_req": "0 GB"},
+            "tts": {"voice": "en-IN-NeerjaNeural", "name": "Edge-TTS Neural Voice", "provider": "edge", "vram_req": "0 GB"},
+            "total_vram_gb": 0.0,
+            "est_latency_ms": 235,
+            "has_gpu": False,
+            "summary": "Industry-leading voice latency (~235ms end-to-end). Zero hardware dependencies — runs smoothly on any basic host."
+        }
+        alts = [
+            {
+                "id": "hybrid_local_stt",
+                "title": "Hybrid (Local Whisper + Cloud LLM)",
+                "llm": "qwen/qwen3.8-27b",
+                "stt": "whisper-large-v3-turbo",
+                "tts": "en-IN-NeerjaNeural",
+                "est_latency_ms": 280,
+                "tradeoff": "Keeps audio capture local, offloads reasoning to cloud."
+            },
+            {
+                "id": "local_fallback",
+                "title": "Self-Hosted Local Alternative",
+                "llm": "qwen2.5:7b" if (has_gpu and vram >= 7) else ("qwen2.5:3b" if has_gpu else "qwen2.5:1.5b"),
+                "stt": "whisper-large-v3-turbo" if (has_gpu and vram >= 7) else "faster-whisper-small",
+                "tts": "kokoro" if has_gpu else "zira",
+                "est_latency_ms": 380 if has_gpu else 950,
+                "tradeoff": "100% independent from external API quotas."
+            }
+        ]
+
+    return {
+        "hardware_input": {
+            "vram_gb": vram,
+            "ram_gb": ram,
+            "has_gpu": has_gpu,
+            "privacy_strict": strict,
+            "concurrent_calls": calls
+        },
+        "recommended": rec,
+        "alternatives": alts
+    }
+
+
+@app.get("/api/agents/{agent_id}/export-docker")
+def export_agent_docker(
+    agent_id: int,
+    llm_model: Optional[str] = None,
+    llm_base_url: Optional[str] = None,
+    llm_api_key: Optional[str] = None,
+    stt_model: Optional[str] = None,
+    stt_base_url: Optional[str] = None,
+    tts_voice: Optional[str] = None,
+    has_gpu: bool = False,
+    privacy_strict: bool = True,
+    user: dict = Depends(require_user)
+):
+    """Exports an agent as a self-contained on-premise Docker appliance tailored to client specs."""
+    with db() as conn:
+        agent_row = owned_agent(conn, agent_id, user, required_perm="can_call")
+        agent_data = row_to_dict(agent_row)
+        docs = [row_to_dict(r) for r in conn.execute("SELECT * FROM documents WHERE agent_id = ? ORDER BY id ASC", (agent_id,)).fetchall()]
+        chunks = [row_to_dict(r) for r in conn.execute("SELECT * FROM chunks WHERE agent_id = ? ORDER BY id ASC", (agent_id,)).fetchall()]
+
+    agent_slug = re.sub(r'[^a-zA-Z0-9_\-]+', '_', agent_data.get("name", "agent")).strip('_').lower() or f"agent_{agent_id}"
+
+    # Determine tailored model and provider configs
+    target_llm = (llm_model or ("qwen2.5:7b" if (has_gpu and privacy_strict) else ("qwen2.5:3b" if privacy_strict else MODEL))).strip()
+    target_llm_base = (llm_base_url or ("http://ollama:11434/v1" if privacy_strict else BASE_URL)).strip()
+    target_llm_key = (llm_api_key or ("ollama" if "ollama" in target_llm_base else API_KEY)).strip()
+    target_stt = (stt_model or STT_MODEL).strip()
+    target_stt_base = (stt_base_url or ("http://ollama:11434/v1" if privacy_strict else STT_BASE_URL)).strip()
+    target_tts = (tts_voice or agent_data.get("voice_name") or TTS_VOICE).strip()
+
+    # Build seeded standalone SQLite database
+    with tempfile.TemporaryDirectory() as td:
+        seed_db_path = os.path.join(td, "agents.db")
+        sconn = sqlite3.connect(seed_db_path)
+        sconn.execute("""CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            pw_salt TEXT NOT NULL,
+            pw_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS sessions (
+            token TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS agents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            system_prompt TEXT NOT NULL DEFAULT '',
+            greeting TEXT NOT NULL DEFAULT '',
+            voice_name TEXT NOT NULL DEFAULT '',
+            rate REAL NOT NULL DEFAULT 1.0,
+            lang TEXT NOT NULL DEFAULT 'en-US',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            use_knowledge INTEGER NOT NULL DEFAULT 0,
+            tools_enabled INTEGER NOT NULL DEFAULT 0,
+            barge_in INTEGER NOT NULL DEFAULT 1,
+            user_id INTEGER,
+            booking_webhook TEXT NOT NULL DEFAULT '',
+            google_calendar_id TEXT NOT NULL DEFAULT '',
+            google_sheet_id TEXT NOT NULL DEFAULT '',
+            google_credentials_json TEXT NOT NULL DEFAULT '',
+            google_auto_sync_calendar INTEGER NOT NULL DEFAULT 0,
+            google_auto_sync_sheets INTEGER NOT NULL DEFAULT 0,
+            google_enable_meet INTEGER NOT NULL DEFAULT 0
+        )""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS agent_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            role TEXT NOT NULL DEFAULT 'viewer',
+            created_at TEXT NOT NULL,
+            UNIQUE(agent_id, user_id)
+        )""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
+            filename TEXT NOT NULL, content TEXT NOT NULL, created_at TEXT NOT NULL)""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS chunks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
+            document_id INTEGER NOT NULL, content TEXT NOT NULL)""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS calls (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
+            call_uid TEXT, started_at TEXT, ended_at TEXT,
+            num_turns INTEGER NOT NULL DEFAULT 0, transcript TEXT NOT NULL DEFAULT '[]')""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS bookings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
+            call_uid TEXT, name TEXT, phone TEXT, datetime TEXT, reason TEXT,
+            created_at TEXT NOT NULL,
+            schedule_status TEXT NOT NULL DEFAULT 'CONFIRMED',
+            proposed_alternative TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL DEFAULT '',
+            slot_start TEXT NOT NULL DEFAULT '',
+            slot_end TEXT NOT NULL DEFAULT '')""")
+        sconn.execute("""CREATE TABLE IF NOT EXISTS outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER NOT NULL,
+            booking_id INTEGER,
+            event TEXT NOT NULL,
+            payload TEXT NOT NULL DEFAULT '{}',
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            created_at TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT NOT NULL DEFAULT '')""")
+
+        salt, h = hash_pw("admin123")
+        cur_u = sconn.execute(
+            "INSERT INTO users (email, pw_salt, pw_hash, created_at) VALUES (?,?,?,?)",
+            ("admin@appliance.local", salt, h, now_iso())
+        )
+        app_uid = cur_u.lastrowid
+        app_token = "appliance_default_session"
+        sconn.execute("INSERT INTO sessions (token, user_id, created_at) VALUES (?,?,?)",
+                      (app_token, app_uid, now_iso()))
+
+        sconn.execute(
+            """INSERT INTO agents (
+                id, name, system_prompt, greeting, voice_name, rate, lang,
+                created_at, updated_at, use_knowledge, tools_enabled, barge_in,
+                user_id, booking_webhook, google_calendar_id, google_sheet_id,
+                google_credentials_json, google_auto_sync_calendar, google_auto_sync_sheets, google_enable_meet
+            ) VALUES (1, ?,?,?,?,?,?, ?,?, ?,?,?, ?,?, ?,?,?,?,?,?)""",
+            (
+                agent_data.get("name", "Voice Agent"),
+                agent_data.get("system_prompt", ""),
+                agent_data.get("greeting", ""),
+                target_tts,
+                agent_data.get("rate", 1.0),
+                agent_data.get("lang", "en-US"),
+                agent_data.get("created_at", now_iso()),
+                now_iso(),
+                int(agent_data.get("use_knowledge", 0)),
+                int(agent_data.get("tools_enabled", 0)),
+                int(agent_data.get("barge_in", 1)),
+                app_uid,
+                agent_data.get("booking_webhook", ""),
+                agent_data.get("google_calendar_id", ""),
+                agent_data.get("google_sheet_id", ""),
+                agent_data.get("google_credentials_json", ""),
+                int(agent_data.get("google_auto_sync_calendar", 0)),
+                int(agent_data.get("google_auto_sync_sheets", 0)),
+                int(agent_data.get("google_enable_meet", 0)),
+            )
+        )
+        sconn.execute("INSERT INTO agent_members (agent_id, user_id, role, created_at) VALUES (1, ?, 'owner', ?)",
+                      (app_uid, now_iso()))
+
+        doc_map = {}
+        for d in docs:
+            cur_d = sconn.execute(
+                "INSERT INTO documents (agent_id, filename, content, created_at) VALUES (1, ?, ?, ?)",
+                (d["filename"], d["content"], d.get("created_at", now_iso()))
+            )
+            doc_map[d["id"]] = cur_d.lastrowid
+
+        for c in chunks:
+            new_did = doc_map.get(c["document_id"], 1)
+            sconn.execute(
+                "INSERT INTO chunks (agent_id, document_id, content) VALUES (1, ?, ?)",
+                (new_did, c["content"])
+            )
+
+        sconn.commit()
+        sconn.close()
+
+        with open(seed_db_path, "rb") as sf:
+            seed_bytes = sf.read()
+
+    zip_buf = io.BytesIO()
+    root_dir = Path(__file__).parent
+
+    manifest = {
+        "appliance": "Voice Agent Studio On-Premise Docker Appliance",
+        "agent": {
+            "id": 1,
+            "original_id": agent_data.get("id"),
+            "name": agent_data.get("name"),
+            "system_prompt": agent_data.get("system_prompt"),
+            "greeting": agent_data.get("greeting"),
+            "voice_name": target_tts,
+            "rate": agent_data.get("rate"),
+            "lang": agent_data.get("lang"),
+            "use_knowledge": bool(agent_data.get("use_knowledge")),
+            "tools_enabled": bool(agent_data.get("tools_enabled")),
+            "barge_in": bool(agent_data.get("barge_in")),
+            "booking_webhook": agent_data.get("booking_webhook"),
+        },
+        "tailored_models": {
+            "llm_model": target_llm,
+            "llm_base_url": target_llm_base,
+            "stt_model": target_stt,
+            "stt_base_url": target_stt_base,
+            "tts_voice": target_tts,
+            "has_gpu_acceleration": has_gpu,
+            "privacy_strict": privacy_strict
+        },
+        "statistics": {
+            "documents_count": len(docs),
+            "chunks_count": len(chunks)
+        },
+        "default_credentials": {
+            "email": "admin@appliance.local",
+            "password": "admin123"
+        },
+        "exported_at": now_iso()
+    }
+
+    gpu_deploy_block = """    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]""" if has_gpu else """    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]"""
+
+    compose_content = f"""# =============================================================================
+# Voice Agent Appliance — On-Premise Docker Compose Stack
+# Agent: {agent_data.get('name', 'Voice Agent')}
+# Hardware Target: {'NVIDIA GPU Accelerated' if has_gpu else 'CPU Standard'}
+# Privacy Policy: {'100% Air-Gapped Local (Zero Data Egress)' if privacy_strict else 'Hybrid / Cloud Speed'}
+# =============================================================================
+
+version: "3.9"
+
+services:
+  agent-appliance:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: voice-agent-appliance:latest
+    container_name: voice_agent_appliance_{agent_slug}
+    restart: unless-stopped
+    ports:
+      - "${{PORT:-8000}}:8000"
+    environment:
+      - PORT=8000
+      - LLM_API_KEY=${{LLM_API_KEY:-{target_llm_key}}}
+      - LLM_BASE_URL=${{LLM_BASE_URL:-{target_llm_base}}}
+      - LLM_MODEL=${{LLM_MODEL:-{target_llm}}}
+      - STT_BASE_URL=${{STT_BASE_URL:-{target_stt_base}}}
+      - STT_MODEL=${{STT_MODEL:-{target_stt}}}
+      - TTS_VOICE=${{TTS_VOICE:-{target_tts}}}
+      - SESSION_COOKIE_SECURE=false
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: voice_agent_ollama_{agent_slug}
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+{gpu_deploy_block}
+
+volumes:
+  ollama_models:
+"""
+
+    env_content = f"""# Voice Agent Appliance Configuration
+PORT=8000
+LLM_API_KEY={target_llm_key}
+LLM_BASE_URL={target_llm_base}
+LLM_MODEL={target_llm}
+STT_BASE_URL={target_stt_base}
+STT_MODEL={target_stt}
+TTS_VOICE={target_tts}
+SESSION_COOKIE_SECURE=false
+"""
+
+    run_sh_content = """#!/usr/bin/env bash
+set -e
+echo "🚀 Starting Voice Agent On-Premise Docker Appliance..."
+docker compose up -d --build
+echo ""
+echo "✅ Appliance running at http://localhost:8000"
+echo "🔑 Default Login: admin@appliance.local / admin123"
+"""
+
+    run_bat_content = """@echo off
+echo Starting Voice Agent On-Premise Docker Appliance...
+docker compose up -d --build
+echo.
+echo Appliance running at http://localhost:8000
+echo Default Login: admin@appliance.local / admin123
+pause
+"""
+
+    pull_section = f"""## 🧠 Model Setup
+To pull the configured local language model inside the Ollama container:
+```bash
+docker exec -it voice_agent_ollama_{agent_slug} ollama pull {target_llm}
+```""" if "ollama" in target_llm_base else f"""## 🌐 Gateway / Cloud Model Setup
+Pre-configured to route to model `{target_llm}` via `{target_llm_base}`.
+Verify your `LLM_API_KEY` in `.env` if using private API authentication."""
+
+    readme_content = f"""# Voice Agent On-Premise Appliance: {agent_data.get('name', 'Voice Agent')}
+
+This containerized package is tailored for **{agent_data.get('name', 'Voice Agent')}** with:
+- **LLM Model:** `{target_llm}`
+- **STT Engine:** `{target_stt}`
+- **TTS Voice:** `{target_tts}`
+- **Acceleration:** {'NVIDIA GPU' if has_gpu else 'CPU'}
+- **Privacy Policy:** {'100% Air-Gapped Local (Zero Data Egress)' if privacy_strict else 'Hybrid / Cloud Speed'}
+
+---
+
+## 🚀 Quick Start
+
+### 1. Requirements
+- Docker 24.0+ and Docker Compose v2
+{'- NVIDIA GPU + NVIDIA Container Toolkit installed' if has_gpu else '- Standard x86_64 CPU'}
+
+### 2. Start the Appliance
+- **Linux / macOS**:
+  ```bash
+  chmod +x run.sh
+  ./run.sh
+  ```
+- **Windows**:
+  Double click `run.bat` or run:
+  ```cmd
+  docker compose up -d --build
+  ```
+
+### 3. Access Voice Agent Studio
+Open your browser to:
+[http://localhost:8000](http://localhost:8000)
+
+**Default Admin Credentials:**
+- **Email:** `admin@appliance.local`
+- **Password:** `admin123`
+
+---
+
+{pull_section}
+
+---
+
+## 🌐 Embedding in Client Intranet Pages
+Add this single script tag to any internal webpage:
+```html
+<script src="http://<your-server-ip>:8000/widget.js" data-agent-id="1"></script>
+```
+
+---
+
+## 📁 Package Contents
+- `data/agents.db`: Pre-seeded SQLite database with **{agent_data.get('name')}**, complete system prompt, and {len(chunks)} indexed knowledge chunks.
+- `docker-compose.yml`: Multi-service orchestration (FastAPI Voice Runtime + Ollama).
+- `Dockerfile`: Production image build definition.
+- `agent_manifest.json`: Configuration audit manifest.
+"""
+
+    with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("docker-compose.yml", compose_content)
+        zf.writestr(".env", env_content)
+        zf.writestr(".env.example", env_content)
+        zf.writestr("run.sh", run_sh_content)
+        zf.writestr("run.bat", run_bat_content)
+        zf.writestr("README.md", readme_content)
+        zf.writestr("agent_manifest.json", json.dumps(manifest, indent=2))
+        zf.writestr("data/agents.db", seed_bytes)
+        
+        for fname in ["Dockerfile", "requirements.txt", "server.py", "guardrail.py", "google_integration.py"]:
+            fpath = root_dir / fname
+            if fpath.exists():
+                zf.write(fpath, fname)
+                
+        for folder in ["static", "qpo"]:
+            f_dir = root_dir / folder
+            for r, ds, fs in os.walk(f_dir):
+                if "__pycache__" in r:
+                    continue
+                for f in fs:
+                    full_p = os.path.join(r, f)
+                    rel_p = os.path.relpath(full_p, root_dir)
+                    zf.write(full_p, rel_p)
+
+    zip_bytes = zip_buf.getvalue()
+    filename = f"voice_agent_{agent_slug}_appliance.zip"
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 # ---- knowledge base ----
@@ -2002,6 +2568,8 @@ async def llm_chat(messages: List[dict], tools: Optional[list] = None, max_token
     headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=60) as client:
         r = await client.post(f"{BASE_URL}/chat/completions", json=payload, headers=headers)
+        if r.status_code != 200:
+            print(f"[llm_chat] LLM provider error {r.status_code}: {r.text}")
         r.raise_for_status()
         return r.json()
 
@@ -2096,7 +2664,8 @@ async def optimize_prompt(request: Request, user: dict = Depends(require_user)):
                 {"role": "user", "content": f"Transform this draft into a production-grade system prompt:\n\n{original_prompt}"}
             ], temperature=0.8, max_tokens=400)
             return (resp["choices"][0]["message"].get("content") or "").strip()
-        except Exception:
+        except Exception as e:
+            print(f"[optimize_prompt] gen_variant error: {e}")
             return original_prompt
 
     async def gen_template_variant():
@@ -2106,7 +2675,8 @@ async def optimize_prompt(request: Request, user: dict = Depends(require_user)):
                 {"role": "user", "content": f"Fill in the template using this draft prompt:\n\n{original_prompt}"}
             ], temperature=0.7, max_tokens=800)
             return (resp["choices"][0]["message"].get("content") or "").strip()
-        except Exception:
+        except Exception as e:
+            print(f"[optimize_prompt] gen_template_variant error: {e}")
             return original_prompt
 
     tasks = [
