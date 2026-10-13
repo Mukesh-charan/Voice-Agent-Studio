@@ -52,6 +52,11 @@ const api = {
   testGSheets: (id, d) => jreq(`/api/agents/${id}/google/test-sheets`, "POST", d || {}),
   syncGoogleDoc: (id, d) => jreq(`/api/agents/${id}/google/sync-doc`, "POST", d),
   syncAllSheets: (id) => jreq(`/api/agents/${id}/google/sync-all-sheets`, "POST"),
+  twilioConfig: () => jreq("/api/twilio/config"),
+  twilioRoutes: () => jreq("/api/twilio/routes"),
+  addTwilioRoute: (d) => jreq("/api/twilio/routes", "POST", d),
+  deleteTwilioRoute: (id) => rawReq(`/api/twilio/routes/${id}`, { method: "DELETE" }),
+  dialOutbound: (id, d) => jreq(`/api/agents/${id}/twilio/dial`, "POST", d),
 };
 
 // ----------------------------- auth -----------------------------
@@ -178,6 +183,7 @@ function switchTab(name) {
   if (name === "bookings") loadBookings();
   if (name === "guardrails") loadGuardrailsAndMembers();
   if (name === "google") loadGoogleSettings();
+  if (name === "twilio") loadTwilioSettings();
   if (name === "docker") fetchHardwareRecommendations();
   if (name === "embed") {
     const textEl = $("embedScriptText");
@@ -266,6 +272,8 @@ function fillEditor(a) {
   $("use_knowledge").checked = a ? !!a.use_knowledge : false;
   $("tools_enabled").checked = a ? !!a.tools_enabled : false;
   $("barge_in").checked = a ? !!a.barge_in : true;
+  $("twilio_enabled").checked = a ? !!a.twilio_enabled : false;
+  $("twilio_phone_number").value = a ? (a.twilio_phone_number || "") : "";
   $("booking_webhook").value = a ? (a.booking_webhook || "") : "";
 
   // Role badges & permissions
@@ -297,16 +305,28 @@ function collectConfig() {
     use_knowledge: $("use_knowledge").checked,
     tools_enabled: $("tools_enabled").checked,
     barge_in: $("barge_in").checked,
+    twilio_enabled: $("twilio_enabled").checked,
+    twilio_phone_number: $("twilio_phone_number").value.trim(),
     booking_webhook: $("booking_webhook").value.trim(),
   };
 }
 async function saveAgent() {
   const data = collectConfig();
-  const saved = currentAgentId ? await api.update(currentAgentId, data) : await api.create(data);
-  currentAgentId = (saved && saved.id) || currentAgentId;
-  $("editorTitle").textContent = "Edit agent";
-  $("deleteBtn").style.display = "";
-  flash("✓ Saved");
+  try {
+    const saved = currentAgentId ? await api.update(currentAgentId, data) : await api.create(data);
+    currentAgentId = (saved && saved.id) || currentAgentId;
+    $("editorTitle").textContent = "Edit agent";
+    $("deleteBtn").style.display = "";
+    flash("✓ Saved");
+    loadTwilioRoutes();
+  } catch (err) {
+    let msg = err.message || "Failed to save agent";
+    try {
+      const parsed = JSON.parse(msg);
+      if (parsed.detail) msg = parsed.detail;
+    } catch (_) {}
+    toast("⚠️ " + msg);
+  }
 }
 async function deleteCurrent() {
   if (!currentAgentId) return;
@@ -418,7 +438,10 @@ async function loadCalls() {
   list.innerHTML = calls.length ? "" : '<p class="empty">No calls recorded yet.</p>';
   calls.forEach((c) => {
     const row = document.createElement("div"); row.className = "list-row";
-    row.innerHTML = `<span>📞 ${fmt(c.started_at) || "Call #" + c.id} <small>· ${c.num_turns} turns</small></span>`;
+    const srcIcon = c.source === "twilio" ? "☎️ PSTN" : "🌐 Browser";
+    const phoneInfo = c.caller_phone ? `· ${esc(c.caller_phone)}` : "";
+    const durInfo = c.duration_seconds ? `· ${c.duration_seconds}s` : "";
+    row.innerHTML = `<span><strong>${srcIcon}</strong> ${fmt(c.started_at) || "Call #" + c.id} <small>· ${c.num_turns} turns ${phoneInfo} ${durInfo}</small></span>`;
     const view = document.createElement("button"); view.className = "small"; view.textContent = "View"; view.onclick = () => viewCall(c.id);
     row.appendChild(view); list.appendChild(row);
   });
@@ -992,6 +1015,116 @@ function downloadDockerAppliance() {
   document.body.removeChild(a);
 }
 
+// ----------------------------- twilio telephony -----------------------------
+async function loadTwilioSettings() {
+  if (!requireSaved("twilioHint", "Twilio phone telephony")) {
+    return;
+  }
+  const statusBadge = $("twilioStatusBadge");
+  const webhookUrlText = $("twilioWebhookUrlText");
+  const baseOrigin = window.location.origin;
+  if (webhookUrlText) {
+    webhookUrlText.textContent = `${baseOrigin}/api/twilio/voice?agent_id=${currentAgentId || 1}`;
+  }
+
+  try {
+    const cfg = await api.twilioConfig();
+    if (statusBadge) {
+      if (cfg.configured) {
+        statusBadge.textContent = `PSTN Live: ${cfg.phone_number || "Active"}`;
+        statusBadge.className = "role-badge owner";
+        statusBadge.style.color = "#10b981";
+      } else {
+        statusBadge.textContent = "Sandbox / Simulated Mode";
+        statusBadge.className = "role-badge receptionist";
+        statusBadge.style.color = "var(--muted)";
+      }
+    }
+  } catch (err) {
+    if (statusBadge) statusBadge.textContent = "Status Unavailable";
+  }
+
+  loadTwilioRoutes();
+}
+
+async function loadTwilioRoutes() {
+  const list = $("twilioRouteList");
+  if (!list) return;
+  try {
+    const routes = await api.twilioRoutes();
+    list.innerHTML = routes.length ? "" : '<p class="empty" style="font-size:12px;">No custom phone routes defined. Defaults to this agent.</p>';
+    routes.forEach((r) => {
+      const row = document.createElement("div");
+      row.className = "list-row";
+      row.innerHTML =
+        `<div>` +
+          `<strong>${esc(r.phone_number)}</strong> ` +
+          `<span style="color:var(--muted); font-size:12px;">➔ ${esc(r.agent_name || "Agent #" + r.agent_id)}</span>` +
+        `</div>`;
+      const delBtn = document.createElement("button");
+      delBtn.className = "small danger";
+      delBtn.textContent = "Delete";
+      delBtn.onclick = async () => {
+        await api.deleteTwilioRoute(r.id);
+        toast("Route removed");
+        loadTwilioRoutes();
+      };
+      row.appendChild(delBtn);
+      list.appendChild(row);
+    });
+  } catch (err) {
+    console.warn("Failed to load twilio routes:", err);
+  }
+}
+
+async function dialOutboundTelephone() {
+  if (!currentAgentId) { toast("Save the agent first."); return; }
+  const phone = $("dialPhoneNumber").value.trim();
+  if (!phone) { toast("Enter a valid phone number (e.g. +15551234567)"); return; }
+
+  const btn = $("dialNowBtn");
+  const statusBox = $("dialStatusBox");
+  btn.disabled = true;
+  btn.textContent = "Dialing...";
+  statusBox.style.display = "block";
+  statusBox.innerHTML = `Dialing <strong>${esc(phone)}</strong> via Twilio PSTN...`;
+
+  try {
+    const res = await api.dialOutbound(currentAgentId, { phone_number: phone });
+    if (res.success) {
+      statusBox.innerHTML =
+        `✅ <strong>Call Initiated!</strong><br>` +
+        `SID: <code>${esc(res.call_sid)}</code> | Status: <code>${esc(res.status)}</code><br>` +
+        `<small style="color:var(--muted);">Mode: ${esc(res.mode)} ${res.note ? `(${esc(res.note)})` : ''}</small>`;
+      toast("📞 Outbound call dispatched!");
+      loadCalls();
+    } else {
+      statusBox.innerHTML = `❌ Failed: ${esc(res.detail || "Call dispatch failed")}`;
+      toast("Dial failed: " + (res.detail || "Error"));
+    }
+  } catch (err) {
+    statusBox.innerHTML = `❌ Error: ${esc(err.message)}`;
+    toast("Call failed: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "📞 Dial Call";
+  }
+}
+
+async function addTwilioPhoneRoute() {
+  const phone = $("newRoutePhone").value.trim();
+  if (!phone) { toast("Enter a phone number"); return; }
+  if (!currentAgentId) { toast("Select an agent first"); return; }
+  try {
+    await api.addTwilioRoute({ phone_number: phone, agent_id: currentAgentId });
+    $("newRoutePhone").value = "";
+    toast("✓ Phone route registered");
+    loadTwilioRoutes();
+  } catch (err) {
+    toast("Failed: " + err.message);
+  }
+}
+
 // Event listeners
 if ($("addMemberBtn")) $("addMemberBtn").onclick = addMemberItem;
 if ($("testGCalBtn")) $("testGCalBtn").onclick = testCalendar;
@@ -1001,6 +1134,18 @@ if ($("importGDocBtn")) $("importGDocBtn").onclick = importGoogleDocToKB;
 if ($("saveGoogleSettingsBtn")) $("saveGoogleSettingsBtn").onclick = saveGoogleConfig;
 if ($("downloadDockerBtn")) $("downloadDockerBtn").onclick = downloadDockerAppliance;
 if ($("exportDockerQuickBtn")) $("exportDockerQuickBtn").onclick = downloadDockerAppliance;
+if ($("dialNowBtn")) $("dialNowBtn").onclick = dialOutboundTelephone;
+if ($("addRouteBtn")) $("addRouteBtn").onclick = addTwilioPhoneRoute;
+if ($("copyTwilioWebhookBtn")) {
+  $("copyTwilioWebhookBtn").onclick = () => {
+    const txt = $("twilioWebhookUrlText").textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(() => toast("Webhook URL copied!"));
+    } else {
+      toast("Copied URL");
+    }
+  };
+}
 
 // Spec inputs auto-refresh recommendation
 ["spec_privacy", "spec_vram", "spec_ram", "spec_calls"].forEach((id) => {

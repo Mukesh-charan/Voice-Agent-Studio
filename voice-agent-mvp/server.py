@@ -45,6 +45,7 @@ from dotenv import load_dotenv
 
 import asyncio
 import google_integration
+import twilio_integration
 from guardrail import (
     ROLE_OWNER, ROLE_MANAGER, ROLE_RECEPTIONIST, ROLE_VIEWER, ROLES_LIST,
     PERMISSIONS, has_permission, mask_name, mask_phone, abstract_room_notes,
@@ -192,6 +193,8 @@ def init_db():
             ("google_auto_sync_calendar", "INTEGER NOT NULL DEFAULT 0"),
             ("google_auto_sync_sheets", "INTEGER NOT NULL DEFAULT 0"),
             ("google_enable_meet", "INTEGER NOT NULL DEFAULT 0"),
+            ("twilio_phone_number", "TEXT NOT NULL DEFAULT ''"),
+            ("twilio_enabled", "INTEGER NOT NULL DEFAULT 0"),
         ])
         conn.execute("""CREATE TABLE IF NOT EXISTS agent_members (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,6 +214,19 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
             call_uid TEXT, started_at TEXT, ended_at TEXT,
             num_turns INTEGER NOT NULL DEFAULT 0, transcript TEXT NOT NULL DEFAULT '[]')""")
+        _add_columns(conn, "calls", [
+            ("source", "TEXT NOT NULL DEFAULT 'browser'"),
+            ("twilio_call_sid", "TEXT NOT NULL DEFAULT ''"),
+            ("caller_phone", "TEXT NOT NULL DEFAULT ''"),
+            ("duration_seconds", "INTEGER NOT NULL DEFAULT 0"),
+            ("status", "TEXT NOT NULL DEFAULT 'completed'"),
+        ])
+        conn.execute("""CREATE TABLE IF NOT EXISTS twilio_phone_routes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            phone_number TEXT NOT NULL UNIQUE,
+            agent_id INTEGER NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
         conn.execute("""CREATE TABLE IF NOT EXISTS bookings (
             id INTEGER PRIMARY KEY AUTOINCREMENT, agent_id INTEGER NOT NULL,
             call_uid TEXT, name TEXT, phone TEXT, datetime TEXT, reason TEXT,
@@ -561,6 +577,8 @@ class AgentIn(BaseModel):
     google_auto_sync_calendar: bool = False
     google_auto_sync_sheets: bool = False
     google_enable_meet: bool = False
+    twilio_phone_number: str = ""
+    twilio_enabled: bool = False
 
 
 class MemberAddIn(BaseModel):
@@ -609,6 +627,9 @@ class CallIn(BaseModel):
     started_at: Optional[str] = None
     ended_at: Optional[str] = None
     transcript: List[dict] = []
+    source: Optional[str] = "browser"
+    caller_phone: Optional[str] = ""
+    duration_seconds: Optional[int] = 0
 
 
 # ============================ app ============================
@@ -705,19 +726,41 @@ def list_agents(user: dict = Depends(require_user)):
 @app.post("/api/agents")
 def create_agent(a: AgentIn, user: dict = Depends(require_user)):
     now = now_iso()
+    clean_phone = re.sub(r"[^\d+]", "", (a.twilio_phone_number or "").strip())
     with db() as conn:
+        if clean_phone:
+            conflict = conn.execute(
+                "SELECT id, name FROM agents WHERE twilio_phone_number = ?", (clean_phone,)
+            ).fetchone()
+            if not conflict:
+                conflict = conn.execute(
+                    "SELECT a.id, a.name FROM twilio_phone_routes r JOIN agents a ON a.id = r.agent_id WHERE r.phone_number = ?",
+                    (clean_phone,)
+                ).fetchone()
+            if conflict:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Phone number '{clean_phone}' is already assigned to agent '{conflict['name']}' (ID #{conflict['id']}). Each agent must have a unique contact number."
+                )
+
         cur = conn.execute(
             "INSERT INTO agents (name, system_prompt, greeting, voice_name, rate, lang,"
             " created_at, updated_at, use_knowledge, tools_enabled, barge_in, user_id, booking_webhook,"
             " google_calendar_id, google_sheet_id, google_credentials_json, google_auto_sync_calendar,"
-            " google_auto_sync_sheets, google_enable_meet)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            " google_auto_sync_sheets, google_enable_meet, twilio_phone_number, twilio_enabled)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (a.name, a.system_prompt, a.greeting, a.voice_name, a.rate, a.lang, now, now,
              int(a.use_knowledge), int(a.tools_enabled), int(a.barge_in), user["id"], a.booking_webhook,
              a.google_calendar_id, a.google_sheet_id, a.google_credentials_json,
-             int(a.google_auto_sync_calendar), int(a.google_auto_sync_sheets), int(a.google_enable_meet)),
+             int(a.google_auto_sync_calendar), int(a.google_auto_sync_sheets), int(a.google_enable_meet),
+             clean_phone, int(a.twilio_enabled)),
         )
         agent_id = cur.lastrowid
+        if clean_phone:
+            conn.execute(
+                "INSERT OR REPLACE INTO twilio_phone_routes (phone_number, agent_id, created_at) VALUES (?, ?, ?)",
+                (clean_phone, agent_id, now)
+            )
         # Creator is always the owner in agent_members
         conn.execute(
             "INSERT OR REPLACE INTO agent_members (agent_id, user_id, role, created_at) VALUES (?,?,?,?)",
@@ -743,19 +786,47 @@ def get_agent(agent_id: int, user: dict = Depends(require_user)):
 
 @app.put("/api/agents/{agent_id}")
 def update_agent(agent_id: int, a: AgentIn, user: dict = Depends(require_user)):
+    clean_phone = re.sub(r"[^\d+]", "", (a.twilio_phone_number or "").strip())
+    now = now_iso()
     with db() as conn:
         owned_agent(conn, agent_id, user, required_perm="can_edit_settings")
+        if clean_phone:
+            conflict = conn.execute(
+                "SELECT id, name FROM agents WHERE twilio_phone_number = ? AND id != ?",
+                (clean_phone, agent_id)
+            ).fetchone()
+            if not conflict:
+                conflict = conn.execute(
+                    "SELECT a.id, a.name FROM twilio_phone_routes r JOIN agents a ON a.id = r.agent_id WHERE r.phone_number = ? AND r.agent_id != ?",
+                    (clean_phone, agent_id)
+                ).fetchone()
+            if conflict:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Phone number '{clean_phone}' is already assigned to agent '{conflict['name']}' (ID #{conflict['id']}). Each agent must have a unique contact number."
+                )
+
         conn.execute(
             "UPDATE agents SET name=?, system_prompt=?, greeting=?, voice_name=?, rate=?, lang=?,"
             " updated_at=?, use_knowledge=?, tools_enabled=?, barge_in=?, booking_webhook=?,"
             " google_calendar_id=?, google_sheet_id=?, google_credentials_json=?,"
-            " google_auto_sync_calendar=?, google_auto_sync_sheets=?, google_enable_meet=? WHERE id=?",
-            (a.name, a.system_prompt, a.greeting, a.voice_name, a.rate, a.lang, now_iso(),
+            " google_auto_sync_calendar=?, google_auto_sync_sheets=?, google_enable_meet=?,"
+            " twilio_phone_number=?, twilio_enabled=? WHERE id=?",
+            (a.name, a.system_prompt, a.greeting, a.voice_name, a.rate, a.lang, now,
              int(a.use_knowledge), int(a.tools_enabled), int(a.barge_in), a.booking_webhook,
              a.google_calendar_id, a.google_sheet_id, a.google_credentials_json,
              int(a.google_auto_sync_calendar), int(a.google_auto_sync_sheets), int(a.google_enable_meet),
+             clean_phone, int(a.twilio_enabled),
              agent_id),
         )
+
+        conn.execute("DELETE FROM twilio_phone_routes WHERE agent_id = ?", (agent_id,))
+        if clean_phone:
+            conn.execute(
+                "INSERT OR REPLACE INTO twilio_phone_routes (phone_number, agent_id, created_at) VALUES (?, ?, ?)",
+                (clean_phone, agent_id, now)
+            )
+
         row = conn.execute("SELECT * FROM agents WHERE id = ?", (agent_id,)).fetchone()
         role = get_user_agent_role(conn, agent_id, user["id"]) or ROLE_OWNER
     d = row_to_dict(row)
@@ -768,7 +839,7 @@ def update_agent(agent_id: int, a: AgentIn, user: dict = Depends(require_user)):
 def delete_agent(agent_id: int, user: dict = Depends(require_user)):
     with db() as conn:
         owned_agent(conn, agent_id, user, required_perm="can_delete_agent")
-        for tbl in ("documents", "chunks", "calls", "bookings", "agent_members"):
+        for tbl in ("documents", "chunks", "calls", "bookings", "agent_members", "twilio_phone_routes"):
             conn.execute(f"DELETE FROM {tbl} WHERE agent_id = ?", (agent_id,))
         conn.execute("DELETE FROM agents WHERE id = ?", (agent_id,))
     return {"ok": True}
@@ -1390,9 +1461,10 @@ def save_call(c: CallIn, user: dict = Depends(require_user)):
     with db() as conn:
         owned_agent(conn, c.agent_id, user, required_perm="can_call")
         cur = conn.execute(
-            "INSERT INTO calls (agent_id, call_uid, started_at, ended_at, num_turns, transcript)"
-            " VALUES (?,?,?,?,?,?)",
-            (c.agent_id, c.call_uid, c.started_at, c.ended_at, len(c.transcript), json.dumps(c.transcript)))
+            "INSERT INTO calls (agent_id, call_uid, started_at, ended_at, num_turns, transcript, source, caller_phone, duration_seconds, status)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (c.agent_id, c.call_uid, c.started_at, c.ended_at, len(c.transcript), json.dumps(c.transcript),
+             c.source or "browser", c.caller_phone or "", c.duration_seconds or 0, "completed"))
     return {"id": cur.lastrowid}
 
 
@@ -1401,7 +1473,7 @@ def list_calls(agent_id: int, user: dict = Depends(require_user)):
     with db() as conn:
         owned_agent(conn, agent_id, user, required_perm="can_call")
         rows = conn.execute(
-            "SELECT id, call_uid, started_at, ended_at, num_turns FROM calls"
+            "SELECT id, call_uid, started_at, ended_at, num_turns, source, caller_phone, duration_seconds, status FROM calls"
             " WHERE agent_id = ? ORDER BY id DESC", (agent_id,)).fetchall()
     return [row_to_dict(r) for r in rows]
 
@@ -2411,6 +2483,142 @@ def _tts_cache_get(key: str):
     _TTS_CACHE.move_to_end(key)
     return _TTS_CACHE[key]
 
+def _apply_sapi5_voice(engine, requested_voice: str, rate: float = 1.0):
+    v_list = engine.getProperty("voices") or []
+    req = (requested_voice or "").lower().strip()
+    is_male = any(m in req for m in ["david", "male", "guy", "christopher", "george"])
+    selected_id = None
+
+    if is_male:
+        for v in v_list:
+            if "david" in v.name.lower() or "male" in v.name.lower():
+                selected_id = v.id
+                break
+    else:
+        for v in v_list:
+            if "zira" in v.name.lower() or "female" in v.name.lower():
+                selected_id = v.id
+                break
+
+    if not selected_id and v_list:
+        for v in v_list:
+            if not is_male and ("zira" in v.id.lower() or "female" in v.id.lower()):
+                selected_id = v.id
+                break
+        if not selected_id:
+            if not is_male and len(v_list) > 1:
+                selected_id = v_list[1].id
+            else:
+                selected_id = v_list[0].id
+
+    if selected_id:
+        engine.setProperty("voice", selected_id)
+    engine.setProperty("rate", int(200 * rate))
+
+
+async def synthesize_speech_bytes(text: str, voice: str = "zira", rate: float = 1.0) -> bytes:
+    """Synthesize speech returning WAV bytes (used by Twilio telephony and TTS caching)."""
+    if not text:
+        return b""
+    clean_text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    clean_text = re.sub(r"\*([^*]+)\*", r"\1", clean_text)
+    clean_text = re.sub(r"[#*`_~]", "", clean_text).strip()
+
+    cache_key = f"{voice}_{rate}_{clean_text}"
+    cached = _tts_cache_get(cache_key)
+    if cached and cached[1] == "audio/wav":
+        return cached[0]
+
+    def _sync_pyttsx3():
+        try:
+            import pythoncom
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
+        import pyttsx3, tempfile
+        try:
+            engine = pyttsx3.init()
+            _apply_sapi5_voice(engine, voice, rate)
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp_path = tmp.name
+            engine.save_to_file(clean_text, tmp_path)
+            engine.runAndWait()
+            with open(tmp_path, "rb") as f:
+                wav_bytes = f.read()
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+            return wav_bytes
+        finally:
+            try:
+                import pythoncom
+                pythoncom.CoUninitialize()
+            except Exception:
+                pass
+
+    try:
+        wav_bytes = await asyncio.to_thread(_sync_pyttsx3)
+        if wav_bytes:
+            _tts_cache_put(cache_key, (wav_bytes, "audio/wav"))
+            return wav_bytes
+    except Exception as e:
+        print(f"[synthesize_speech_bytes] error: {e}")
+    return b""
+
+
+async def transcribe_audio_bytes(raw_bytes: bytes, language: Optional[str] = None, prompt: Optional[str] = None) -> str:
+    """Transcribe raw audio bytes using local Faster-Whisper or Groq STT fallback."""
+    if not raw_bytes or len(raw_bytes) < 1024:
+        return ""
+    target_lang = (language or "en").split("-")[0].lower()
+    default_prompt = (prompt or "Conversational English voice call: appointments, bookings, schedule, names.").strip()
+
+    model = get_local_whisper()
+    if model:
+        def _sync_transcribe(raw: bytes) -> str:
+            segments, _ = model.transcribe(
+                io.BytesIO(raw),
+                beam_size=1,
+                language=target_lang,
+                initial_prompt=default_prompt,
+                temperature=0.0,
+                vad_filter=True,
+                vad_parameters=dict(min_silence_duration_ms=250)
+            )
+            return " ".join([seg.text for seg in segments]).strip()
+        try:
+            text = await asyncio.to_thread(_sync_transcribe, raw_bytes)
+            if _clean_whisper_text(text) in WHISPER_HALLUCINATIONS:
+                text = ""
+            return text
+        except Exception as e:
+            print(f"[transcribe_audio_bytes] Local faster-whisper error: {e}")
+
+    if STT_API_KEY and STT_API_KEY != "ollama" and "groq" in STT_BASE_URL:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                files = {"file": ("utterance.wav", raw_bytes, "audio/wav")}
+                data = {
+                    "model": STT_MODEL,
+                    "temperature": "0.0",
+                    "language": target_lang,
+                    "prompt": default_prompt,
+                    "response_format": "json"
+                }
+                headers = {"Authorization": f"Bearer {STT_API_KEY}"}
+                r = await client.post(f"{STT_BASE_URL}/audio/transcriptions", files=files, data=data, headers=headers)
+                if r.status_code == 200:
+                    text = (r.json().get("text") or "").strip()
+                    if _clean_whisper_text(text) in WHISPER_HALLUCINATIONS:
+                        text = ""
+                    return text
+        except Exception as e:
+            print(f"[transcribe_audio_bytes] Cloud STT error: {e}")
+
+    return ""
+
+
 @app.post("/api/tts")
 async def text_to_speech(request: Request):
     """Studio Text-to-Speech: Defaults to 100% offline local Windows SAPI5 (pyttsx3) with in-memory caching."""
@@ -2432,40 +2640,6 @@ async def text_to_speech(request: Request):
     if cached:
         cached_bytes, cached_media = cached
         return Response(content=cached_bytes, media_type=cached_media)
-
-    def _apply_sapi5_voice(engine, requested_voice: str, rate: float = 1.0):
-        v_list = engine.getProperty("voices") or []
-        req = (requested_voice or "").lower().strip()
-        is_male = any(m in req for m in ["david", "male", "guy", "christopher", "george"])
-        selected_id = None
-
-        if is_male:
-            for v in v_list:
-                if "david" in v.name.lower() or "male" in v.name.lower():
-                    selected_id = v.id
-                    break
-        else:
-            # Default to female voice (Zira or any female token)
-            for v in v_list:
-                if "zira" in v.name.lower() or "female" in v.name.lower():
-                    selected_id = v.id
-                    break
-
-        if not selected_id and v_list:
-            for v in v_list:
-                if not is_male and ("zira" in v.id.lower() or "female" in v.id.lower()):
-                    selected_id = v.id
-                    break
-            if not selected_id:
-                # On Windows SAPI5, index 1 is Zira (female) and index 0 is David (male)
-                if not is_male and len(v_list) > 1:
-                    selected_id = v_list[1].id
-                else:
-                    selected_id = v_list[0].id
-
-        if selected_id:
-            engine.setProperty("voice", selected_id)
-        engine.setProperty("rate", int(200 * rate))
 
     # 1. Windows Native SAPI5 via pyttsx3 (100% Local Offline)
     if "david" in voice.lower() or "zira" in voice.lower() or not "Neural" in voice:
@@ -3223,6 +3397,28 @@ async def favicon():
 @app.get("/hybridaction/{rest_of_path:path}", include_in_schema=False)
 async def ignore_extension_tracker(rest_of_path: str):
     return Response(content="", media_type="text/plain", status_code=200)
+
+# Register server-level hooks with Twilio integration engine
+twilio_integration.register_server_hooks(
+    db=db,
+    require_user=require_user,
+    owned_agent=owned_agent,
+    transcribe_audio_bytes=transcribe_audio_bytes,
+    synthesize_speech_bytes=synthesize_speech_bytes,
+    llm_chat=llm_chat,
+    retrieve_context=retrieve_context,
+    validate_and_save_booking=validate_and_save_booking,
+    update_booking_db=update_booking_db,
+    auto_sync_booking_to_google=auto_sync_booking_to_google,
+    fire_webhook=fire_webhook,
+    booking_payload=booking_payload,
+    evaluate_conversational_guardrail=evaluate_conversational_guardrail,
+    build_calendar_prompt=build_calendar_prompt,
+    BOOKING_TOOL=BOOKING_TOOL,
+    UPDATE_BOOKING_TOOL=UPDATE_BOOKING_TOOL,
+    BOOKING_SYSTEM_GUARDRAIL=BOOKING_SYSTEM_GUARDRAIL,
+)
+app.include_router(twilio_integration.router)
 
 # Static UI mounted last so /api and /chat take precedence.
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

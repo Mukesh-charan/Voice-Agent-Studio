@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise System Architecture Specification — Voice Agent Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --border-main: #cbd5e1;
+      --border-dark: #334155;
+      --text-head: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      
+      --tier-purple-bg: #faf5ff;
+      --tier-purple-border: #d8b4fe;
+      --tier-purple-top: #9333ea;
+      --tier-purple-text: #581c87;
+
+      --card-green-bg: #f8fdf9;
+      --card-green-border: #86efac;
+      --card-green-left: #16a34a;
+      --card-green-title: #14532d;
+      --card-green-desc: #166534;
+      
+      --subbox-bg: #ffffff;
+      --subbox-border: #bbf7d0;
+      --subbox-text: #065f46;
+
+      --note-bg: #fefce8;
+      --note-border: #facc15;
+      --note-left: #ca8a04;
+      --note-text: #713f12;
+      
+      --arrow-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px 16px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Document Header Bar */
+    .document-header {
+      width: 100%;
+      max-width: 1320px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-main);
+      border-radius: 8px 8px 0 0;
+      padding: 22px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .header-left h1 {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--text-head);
+      letter-spacing: -0.3px;
+    }
+    .header-left p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .header-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .meta-tag {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* Main Diagram Canvas */
+    .canvas-container {
+      width: 100%;
+      max-width: 1320px;
+      background: #ffffff;
+      border: 1px solid var(--border-main);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 44px 32px 50px 32px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+      position: relative;
+    }
+
+    /* 4 Columns Grid */
+    .grid-tier {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 36px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .tier-column {
+      display: flex;
+      flex-direction: column;
+      gap: 26px;
+      position: relative;
+    }
+
+    /* Tier Header Cards (Top Row) */
+    .tier-header {
+      background: var(--tier-purple-bg);
+      border: 1.5px solid var(--tier-purple-border);
+      border-top: 4px solid var(--tier-purple-top);
+      border-radius: 6px;
+      padding: 16px 14px;
+      text-align: center;
+      height: 84px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(147, 51, 234, 0.04);
+      position: relative;
+    }
+    .tier-header .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--tier-purple-text);
+      letter-spacing: -0.2px;
+    }
+    .tier-header .subtitle {
+      font-size: 10.5px;
+      color: #7e22ce;
+      font-weight: 600;
+      margin-top: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Layered Modular Container Cards (Row 1 & Row 2) */
+    .component-card {
+      background: var(--card-green-bg);
+      border: 1.5px solid var(--card-green-border);
+      border-left: 4px solid var(--card-green-left);
+      border-radius: 6px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+
+    /* Standardized uniform heights across rows */
+    .row-1-card {
+      height: 236px;
+    }
+    .row-2-card {
+      height: 236px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .component-card .comp-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--card-green-title);
+      letter-spacing: -0.1px;
+    }
+    .component-card .tech-badge {
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    .component-card .comp-desc {
+      font-size: 11px;
+      color: var(--card-green-desc);
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    /* Nested Sub-Modules Container (Box-inside-Box) */
+    .submodule-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px dashed #86efac;
+      border-radius: 4px;
+      padding: 8px;
+    }
+    .submodule-box {
+      background: var(--subbox-bg);
+      border: 1px solid var(--subbox-border);
+      border-radius: 3px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--subbox-text);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .submodule-box .sub-dot {
+      width: 5px;
+      height: 5px;
+      background: #16a34a;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .submodule-box .sub-label {
+      font-weight: 600;
+      color: #064e3b;
+      margin-right: 2px;
+    }
+
+    /* Formal Callout Note Cards */
+    .annotation-box {
+      background: var(--note-bg);
+      border: 1px solid var(--note-border);
+      border-left: 3px solid var(--note-left);
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: var(--note-text);
+      line-height: 1.4;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      height: 68px;
+    }
+    .annotation-box strong {
+      color: #854d0e;
+      font-weight: 600;
+    }
+
+    /* Dynamic SVG Overlay */
+    svg#connector-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Architecture Specification Table */
+    .details-table-wrap {
+      margin-top: 54px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 28px;
+    }
+    .details-table-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-head);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .details-table th, .details-table td {
+      border: 1px solid #e2e8f0;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .details-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .details-table td {
+      color: var(--text-body);
+    }
+    .details-table code {
+      font-family: 'JetBrains Mono', monospace;
+      color: #0369a1;
+      background: #f0f9ff;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+      .document-header, .canvas-container {
+        border: none;
+        box-shadow: none;
+        max-width: 100%;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Formal Document Header -->
+  <div class="document-header">
+    <div class="header-left">
+      <h1>Voice Agent System Architecture</h1>
+      <p>Modular Layered Telephony &amp; Multi-Agent Intelligence Infrastructure</p>
+    </div>
+    <div class="header-meta">
+      <div class="meta-tag">STATUS: PRODUCTION</div>
+      <div class="meta-tag">DOC-ID: ARCH-MODULAR-V2</div>
+      <div class="meta-tag">SECURITY: RBAC / STRICT 1:1</div>
+    </div>
+  </div>
+
+  <!-- Diagram Canvas -->
+  <div class="canvas-container" id="canvas-container">
+    
+    <!-- SVG Vector Connection Layer -->
+    <svg id="connector-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Arrowhead for standard solid connectors -->
+        <marker id="arrow-solid" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155" />
+        </marker>
+        <!-- Arrowhead for reverse connector -->
+        <marker id="arrow-reverse" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155" />
+        </marker>
+        <!-- Purple Arrowhead for top inter-tier header link -->
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#9333ea" />
+        </marker>
+        <marker id="arrow-purple-start" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#9333ea" />
+        </marker>
+      </defs>
+    </svg>
+
+    <div class="grid-tier">
+
+      <!-- Column 1: Frontend Services -->
+      <div class="tier-column">
+        <div class="tier-header" id="tier1-header">
+          <div class="title">Frontend Services</div>
+          <div class="subtitle">TIER 1 &bull; CLIENT PRESENTATION</div>
+        </div>
+
+        <!-- Col 1 Card 1: Web Interface -->
+        <div class="component-card row-1-card" id="col1-card1">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">Voice Studio Web Interface</div>
+              <span class="tech-badge">HTML5 / Vanilla CSS</span>
+            </div>
+            <div class="comp-desc">Single-page control studio for agent orchestration and call management.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Studio Dashboard:</span> Real-time call logs &amp; metrics</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Agent Configurator:</span> Prompts, Voice, LLM selector</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Telephony Tab:</span> 1:1 phone routing &amp; dial dispatch</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 1 Card 2: Client Audio Engine -->
+        <div class="component-card row-2-card" id="col1-card2">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">Client Audio Engine</div>
+              <span class="tech-badge">Web Audio API / PCM</span>
+            </div>
+            <div class="comp-desc">In-browser voice capture, buffer streaming, and audio playback queue.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Audio Input Stream:</span> 48kHz mic capture &amp; 16kHz resample</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Browser VAD:</span> Dynamic energy voice activity detection</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Duplex Audio Buffer:</span> Low-latency streamed voice return</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation-box">
+          <div><strong>Note:</strong> Full-duplex audio stream via WebSocket with client-side VAD barge-in.</div>
+        </div>
+      </div>
+
+      <!-- Column 2: Backend Services -->
+      <div class="tier-column">
+        <div class="tier-header" id="tier2-header">
+          <div class="title">Backend Services</div>
+          <div class="subtitle">TIER 2 &bull; APPLICATION &amp; SPEECH CORE</div>
+        </div>
+
+        <!-- Col 2 Card 1: FastAPI Core -->
+        <div class="component-card row-1-card" id="col2-card1">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">FastAPI Application Core</div>
+              <span class="tech-badge">FastAPI / Uvicorn</span>
+            </div>
+            <div class="comp-desc">REST gateway, multi-user authentication, and agent policy execution.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Auth &amp; RBAC:</span> Session tokens &amp; role permissions</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Tool Registry:</span> Function calling &amp; booking capture</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Safety Guardrails:</span> PII masking &amp; calendar validation</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2 Card 2: Telephony & Speech Loop -->
+        <div class="component-card row-2-card" id="col2-card2">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">Telephony &amp; Speech Loop</div>
+              <span class="tech-badge">WebSocket / Audioop</span>
+            </div>
+            <div class="comp-desc">Bi-directional phone audio transcoding, transcription, and TTS synthesis.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Audio Transcoder:</span> μ-law 8kHz &harr; 16kHz PCM linear</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Speech-to-Text (STT):</span> Faster-Whisper CUDA / Groq</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Text-to-Speech (TTS):</span> Offline pyttsx3 &amp; Edge-TTS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation-box">
+          <div><strong>Note:</strong> Real-time barge-in interruption and dynamic context injection via BM25 retrieval.</div>
+        </div>
+      </div>
+
+      <!-- Column 3: Data Layer -->
+      <div class="tier-column">
+        <div class="tier-header" id="tier3-header">
+          <div class="title">Data Layer</div>
+          <div class="subtitle">TIER 3 &bull; PERSISTENCE &amp; INDEXING</div>
+        </div>
+
+        <!-- Col 3 Card 1: SQLite Database -->
+        <div class="component-card row-1-card" id="col3-card1">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">SQLite Relational Database</div>
+              <span class="tech-badge">SQLite (agents.db / WAL)</span>
+            </div>
+            <div class="comp-desc">ACID persistent data storage for agents, transcripts, and routing.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Entities:</span> agents, users, agent_members</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Call Journal:</span> calls (transcripts, turns, duration)</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Routing &amp; Booking:</span> twilio_phone_routes (1:1), bookings</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3 Card 2: BM25 & Outbox Store -->
+        <div class="component-card row-2-card" id="col3-card2">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">BM25 Retrieval &amp; Outbox Store</div>
+              <span class="tech-badge">BM25 Index / Outbox</span>
+            </div>
+            <div class="comp-desc">Vector-like lexical retrieval index and reliable external event queue.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Inverted Index:</span> Per-agent cached token index</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Chunk Store:</span> 700-char overlapping knowledge chunks</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Outbox Queue:</span> Reliable webhook delivery &amp; retry</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation-box">
+          <div><strong>Note:</strong> Strict unique constraint guarantees no two agents can share duplicate phone numbers.</div>
+        </div>
+      </div>
+
+      <!-- Column 4: Integrations / Third-Party Services -->
+      <div class="tier-column">
+        <div class="tier-header" id="tier4-header">
+          <div class="title">Integrations &amp; External</div>
+          <div class="subtitle">TIER 4 &bull; TELEPHONY &amp; CLOUD APIS</div>
+        </div>
+
+        <!-- Col 4 Card 1: Twilio PSTN -->
+        <div class="component-card row-1-card" id="col4-card1">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">Twilio Voice Telephony</div>
+              <span class="tech-badge">Twilio REST / TwiML</span>
+            </div>
+            <div class="comp-desc">Global telecom carrier gateway and media stream streaming.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Inbound Webhook:</span> TwiML &lt;Connect&gt;&lt;Stream&gt;</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Media WebSocket:</span> 20ms bidirectional phone stream</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Outbound Dial:</span> REST calls.create &amp; status callback</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 4 Card 2: External LLMs & Productivity -->
+        <div class="component-card row-2-card" id="col4-card2">
+          <div>
+            <div class="card-top">
+              <div class="comp-title">External LLMs &amp; Productivity</div>
+              <span class="tech-badge">Ollama / Groq / Google</span>
+            </div>
+            <div class="comp-desc">Language intelligence providers and automated business integrations.</div>
+          </div>
+          <!-- Layered Submodules -->
+          <div class="submodule-container">
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">LLM Router:</span> Ollama (local GPU) / Groq / Gemini</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Google Sync:</span> Google Calendar &amp; Sheets API</span>
+            </div>
+            <div class="submodule-box">
+              <div class="sub-dot"></div>
+              <span><span class="sub-label">Tunnel Gateway:</span> ngrok HTTPS/WSS public ingress</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation-box">
+          <div><strong>Note:</strong> Public reverse-tunnel gateway via ngrok forwards secure external PSTN callbacks.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Formal Architecture Table -->
+    <div class="details-table-wrap">
+      <div class="details-table-title">System Tier Specifications &amp; Interfaces</div>
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">Tier Category</th>
+            <th style="width: 25%;">Primary Components</th>
+            <th style="width: 30%;">Protocols &amp; Interfaces</th>
+            <th style="width: 25%;">Responsibilities</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Frontend Services</strong></td>
+            <td>Voice Agent Studio, Audio Stream Engine</td>
+            <td><code>HTTP/1.1</code>, <code>WSS (WebSocket)</code>, Web Audio API</td>
+            <td>User interactions, dashboard reporting, client mic input &amp; audio rendering.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Backend Services</strong></td>
+            <td>FastAPI Server, Speech Processing Pipeline</td>
+            <td><code>ASGI / Uvicorn</code>, Faster-Whisper, pyttsx3, audioop</td>
+            <td>Call routing, Turn-taking VAD, STT transcription, Guardrail compliance.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Data Layer</strong></td>
+            <td>SQLite DB, BM25 Index, Outbox Queue</td>
+            <td>SQLite3 with WAL mode, In-Memory Inverted Index</td>
+            <td>Relational persistence, RAG knowledge chunking, 1:1 agent phone assignment.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Integrations</strong></td>
+            <td>Twilio PSTN, External LLMs, Google Workspace</td>
+            <td>Twilio REST, TwiML, Groq API, Google OAuth/Service Account</td>
+            <td>Global PSTN dialing, high-speed LLM generation, Calendar &amp; Sheet automation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // Precise Dynamic SVG Connector Renderer
+    function renderConnectors() {
+      const container = document.getElementById('canvas-container');
+      const svg = document.getElementById('connector-svg');
+      if (!container || !svg) return;
+
+      const cRect = container.getBoundingClientRect();
+
+      function getBox(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          left: r.left - cRect.left,
+          right: r.right - cRect.left,
+          top: r.top - cRect.top,
+          bottom: r.bottom - cRect.top,
+          centerX: (r.left + r.right) / 2 - cRect.left,
+          centerY: (r.top + r.bottom) / 2 - cRect.top,
+          width: r.width,
+          height: r.height,
+        };
+      }
+
+      // Collect box coordinates
+      const t1H = getBox('tier1-header');
+      const t2H = getBox('tier2-header');
+      const t3H = getBox('tier3-header');
+      const t4H = getBox('tier4-header');
+
+      const c1_1 = getBox('col1-card1');
+      const c1_2 = getBox('col1-card2');
+
+      const c2_1 = getBox('col2-card1');
+      const c2_2 = getBox('col2-card2');
+
+      const c3_1 = getBox('col3-card1');
+      const c3_2 = getBox('col3-card2');
+
+      const c4_1 = getBox('col4-card1');
+      const c4_2 = getBox('col4-card2');
+
+      if (!t1H || !t2H || !c1_1 || !c2_1) return;
+
+      let pathsHtml = svg.querySelector('defs').outerHTML;
+
+      // 1. Vertical connectors in each column (header -> card 1 -> card 2)
+      const verticals = [
+        [t1H, c1_1], [c1_1, c1_2],
+        [t2H, c2_1], [c2_1, c2_2],
+        [t3H, c3_1], [c3_1, c3_2],
+        [t4H, c4_1], [c4_1, c4_2],
+      ];
+
+      verticals.forEach(([from, to]) => {
+        pathsHtml += `
+          <line x1="${from.centerX}" y1="${from.bottom}" 
+                x2="${to.centerX}" y2="${to.top}" 
+                stroke="#475569" stroke-width="1.8" 
+                marker-end="url(#arrow-solid)" />
+        `;
+      });
+
+      // 2. Horizontal: Tier 1 Header <---> Tier 2 Header (Dashed Bidirectional)
+      pathsHtml += `
+        <line x1="${t1H.right}" y1="${t1H.centerY}" 
+              x2="${t2H.left}" y2="${t2H.centerY}" 
+              stroke="#9333ea" stroke-width="1.8" stroke-dasharray="4,4" 
+              marker-start="url(#arrow-purple-start)" marker-end="url(#arrow-purple)" />
+      `;
+
+      // 3. Horizontal: Frontend Card 1 ---> Backend Card 1 (Solid)
+      pathsHtml += `
+        <line x1="${c1_1.right}" y1="${c1_1.centerY}" 
+              x2="${c2_1.left}" y2="${c2_1.centerY}" 
+              stroke="#334155" stroke-width="1.8" 
+              marker-end="url(#arrow-solid)" />
+      `;
+
+      // 4. Horizontal: Backend Card 1 ---> Data Layer Card 1 (Solid)
+      pathsHtml += `
+        <line x1="${c2_1.right}" y1="${c2_1.centerY}" 
+              x2="${c3_1.left}" y2="${c3_1.centerY}" 
+              stroke="#334155" stroke-width="1.8" 
+              marker-end="url(#arrow-solid)" />
+      `;
+
+      // 5. Horizontal: Data Layer Card 2 ---> Backend Card 2 (Solid, pointing to Backend)
+      pathsHtml += `
+        <line x1="${c3_2.left}" y1="${c3_2.centerY}" 
+              x2="${c2_2.right}" y2="${c2_2.centerY}" 
+              stroke="#334155" stroke-width="1.8" 
+              marker-end="url(#arrow-solid)" />
+      `;
+
+      // 6. Long Return Loop: Integrations Card 2 ---> Frontend Card 2 (Dashed feedback loop under cards)
+      const loopY = c1_2.bottom + 26;
+      pathsHtml += `
+        <path d="M ${c4_2.centerX} ${c4_2.bottom} 
+                 L ${c4_2.centerX} ${loopY} 
+                 L ${c1_2.centerX} ${loopY} 
+                 L ${c1_2.centerX} ${c1_2.bottom}" 
+              fill="none" stroke="#475569" stroke-width="1.8" stroke-dasharray="4,4" 
+              marker-end="url(#arrow-solid)" />
+      `;
+
+      svg.innerHTML = pathsHtml;
+    }
+
+    window.addEventListener('load', renderConnectors);
+    window.addEventListener('resize', renderConnectors);
+    setTimeout(renderConnectors, 80);
+    setTimeout(renderConnectors, 300);
+  </script>
+
+</body>
+</html>

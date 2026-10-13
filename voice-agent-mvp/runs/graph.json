@@ -1,0 +1,1297 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-10-13T07:22:39.044Z",
+  "sources": [
+    "research\\Research_Paper_Quantum_Prompt_Optimization.docx",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "docs\\ms_resort_guide.pdf",
+    "docs\\THREAT_MODEL.md",
+    "docs\\review_1_v1 (3).pptx",
+    "docs\\review_1_v1 (3) - Copy.pptx",
+    "docs\\Phase1_Review2.pptx",
+    "docs\\Voice_Agent_Studio_Project_Writeup.docx",
+    "README.md",
+    ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+    ".venv\\Lib\\site-packages\\sklearn\\externals\\array_api_extra\\README.md",
+    ".venv\\Lib\\site-packages\\sklearn\\externals\\array_api_compat\\README.md",
+    ".venv\\Lib\\site-packages\\sklearn\\datasets\\images\\README.txt",
+    ".venv\\Lib\\site-packages\\numpy\\_core\\tests\\data\\umath-validation-set-README.txt",
+    "requirements.txt"
+  ],
+  "entities": [
+    {
+      "id": "sec_rtk_token_saver_rule_claude_",
+      "name": "RTK Token Saver Rule (claude)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 2,
+      "evidence": "# RTK Token Saver Rule (claude)"
+    },
+    {
+      "id": "sec_rtk_rust_token_killer_optimization_rule",
+      "name": "RTK (Rust Token Killer) Optimization Rule",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 4,
+      "evidence": "## RTK (Rust Token Killer) Optimization Rule"
+    },
+    {
+      "id": "sec_output_token_optimization",
+      "name": "Output & Token Optimization",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 15,
+      "evidence": "### Output & Token Optimization"
+    },
+    {
+      "id": "sec_headroom_context_compression_upstream_headroomlabs_ai_headroom_",
+      "name": "Headroom Context Compression (Upstream: headroomlabs-ai/headroom)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 21,
+      "evidence": "## Headroom Context Compression (Upstream: headroomlabs-ai/headroom)"
+    },
+    {
+      "id": "sec_jevgraph_knowledge_graph_context_optimization_upstream_chenmingtang830_jevgraph_",
+      "name": "JevGraph Knowledge Graph Context Optimization (Upstream: chenmingtang830/jevgraph)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 25,
+      "evidence": "## JevGraph Knowledge Graph Context Optimization (Upstream: chenmingtang830/jevgraph)"
+    },
+    {
+      "id": "sec_anti_slop_filter_quality_rules_upstream_miqdadbadjuber_anti_slop_",
+      "name": "Anti-Slop Filter & Quality Rules (Upstream: miqdadbadjuber/anti-slop)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 29,
+      "evidence": "## Anti-Slop Filter & Quality Rules (Upstream: miqdadbadjuber/anti-slop)"
+    },
+    {
+      "id": "ent_filter_not_style_guide_",
+      "name": "Filter, Not Style Guide:",
+      "type": "Component/Requirement",
+      "description": "Run purpose tests before aesthetic choices (reject ungrounded neon glows, fake metrics, generic sparkle badges).",
+      "source": "CLAUDE.md",
+      "line": 31,
+      "evidence": "- **Filter, Not Style Guide:** Run purpose tests before aesthetic choices (reject ungrounded neon glows, fake metrics, generic sparkle badges)."
+    },
+    {
+      "id": "ent_liveliness_grounding_",
+      "name": "Liveliness & Grounding:",
+      "type": "Component/Requirement",
+      "description": "Rely on `DESIGN.md` or explicit brief for design soul; enforce WCAG AA human accessibility.",
+      "source": "CLAUDE.md",
+      "line": 32,
+      "evidence": "- **Liveliness & Grounding:** Rely on `DESIGN.md` or explicit brief for design soul; enforce WCAG AA human accessibility."
+    },
+    {
+      "id": "ent_dedicated_skills_",
+      "name": "Dedicated Skills:",
+      "type": "Component/Requirement",
+      "description": "Read `skills/antislop/SKILL.md` (core), `skills/antislop-ui/SKILL.md`, `skills/antislop-copywriting/SKILL.md`, `skills/antislop-human/SKILL.md`, `skills/antislop-layoutmobile/SKILL.md`, `skills/antisl",
+      "source": "CLAUDE.md",
+      "line": 33,
+      "evidence": "- **Dedicated Skills:** Read `skills/antislop/SKILL.md` (core), `skills/antislop-ui/SKILL.md`, `skills/antislop-copywriting/SKILL.md`, `skills/antislop-human/SK"
+    },
+    {
+      "id": "sec_output_generation_token_saver_rule_ponytail_mode_full_",
+      "name": "Output & Generation Token Saver Rule (Ponytail Mode: FULL)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 36,
+      "evidence": "## Output & Generation Token Saver Rule (Ponytail Mode: FULL)"
+    },
+    {
+      "id": "ent_yagni_shortest_diff_",
+      "name": "YAGNI & Shortest Diff:",
+      "type": "Component/Requirement",
+      "description": "Only write code that must exist. Reach for standard library before custom code or new dependencies. Shortest working diff wins.",
+      "source": "CLAUDE.md",
+      "line": 37,
+      "evidence": "- **YAGNI & Shortest Diff:** Only write code that must exist. Reach for standard library before custom code or new dependencies. Shortest working diff wins."
+    },
+    {
+      "id": "ent_terse_responses_",
+      "name": "Terse Responses:",
+      "type": "Component/Requirement",
+      "description": "Code first. At most 3 short lines of explanation: what was skipped, when to add it. No essays, no unsolicited design tours, no feature walkthroughs.",
+      "source": "CLAUDE.md",
+      "line": 38,
+      "evidence": "- **Terse Responses:** Code first. At most 3 short lines of explanation: what was skipped, when to add it. No essays, no unsolicited design tours, no feature wa"
+    },
+    {
+      "id": "sec_terse_agent_directives",
+      "name": "Terse Agent Directives",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 40,
+      "evidence": "## Terse Agent Directives"
+    },
+    {
+      "id": "sec_context_optimization_compact_diffs_outlines_",
+      "name": "Context Optimization (Compact Diffs & Outlines)",
+      "type": "Section/Module",
+      "description": "Specification section from CLAUDE.md",
+      "source": "CLAUDE.md",
+      "line": 44,
+      "evidence": "## Context Optimization (Compact Diffs & Outlines)"
+    },
+    {
+      "id": "sec_rtk_token_saver_rule_agents_",
+      "name": "RTK Token Saver Rule (agents)",
+      "type": "Section/Module",
+      "description": "Specification section from AGENTS.md",
+      "source": "AGENTS.md",
+      "line": 2,
+      "evidence": "# RTK Token Saver Rule (agents)"
+    },
+    {
+      "id": "sec_threat_model_security_configuration_matrix",
+      "name": "Threat Model & Security Configuration Matrix",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 1,
+      "evidence": "# Threat Model & Security Configuration Matrix"
+    },
+    {
+      "id": "sec_1_system_overview",
+      "name": "1. System Overview",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 8,
+      "evidence": "## 1. System Overview"
+    },
+    {
+      "id": "sec_2_stride_threat_analysis",
+      "name": "2. STRIDE Threat Analysis",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 30,
+      "evidence": "## 2. STRIDE Threat Analysis"
+    },
+    {
+      "id": "sec_2_1_spoofing",
+      "name": "2.1 Spoofing",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 32,
+      "evidence": "### 2.1 Spoofing"
+    },
+    {
+      "id": "sec_2_2_tampering",
+      "name": "2.2 Tampering",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 41,
+      "evidence": "### 2.2 Tampering"
+    },
+    {
+      "id": "sec_2_3_repudiation",
+      "name": "2.3 Repudiation",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 50,
+      "evidence": "### 2.3 Repudiation"
+    },
+    {
+      "id": "sec_2_4_information_disclosure",
+      "name": "2.4 Information Disclosure",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 57,
+      "evidence": "### 2.4 Information Disclosure"
+    },
+    {
+      "id": "sec_2_5_denial_of_service",
+      "name": "2.5 Denial of Service",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 66,
+      "evidence": "### 2.5 Denial of Service"
+    },
+    {
+      "id": "sec_2_6_elevation_of_privilege",
+      "name": "2.6 Elevation of Privilege",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 74,
+      "evidence": "### 2.6 Elevation of Privilege"
+    },
+    {
+      "id": "sec_3_configuration_matrix",
+      "name": "3. Configuration Matrix",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 84,
+      "evidence": "## 3. Configuration Matrix"
+    },
+    {
+      "id": "sec_4_data_flow_pii_boundaries",
+      "name": "4. Data Flow & PII Boundaries",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 105,
+      "evidence": "## 4. Data Flow & PII Boundaries"
+    },
+    {
+      "id": "api_get_api_calls_id_",
+      "name": "GET /api/calls/{id}",
+      "type": "API_Endpoint",
+      "description": "Served via GET /api/calls/{id}",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 116,
+      "evidence": "Served via GET /api/calls/{id}"
+    },
+    {
+      "id": "sec_5_assumptions_out_of_scope",
+      "name": "5. Assumptions & Out-of-Scope",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 126,
+      "evidence": "## 5. Assumptions & Out-of-Scope"
+    },
+    {
+      "id": "sec_6_residual_risks_to_do_",
+      "name": "6. Residual Risks (To-Do)",
+      "type": "Section/Module",
+      "description": "Specification section from docs\\THREAT_MODEL.md",
+      "source": "docs\\THREAT_MODEL.md",
+      "line": 141,
+      "evidence": "## 6. Residual Risks (To-Do)"
+    },
+    {
+      "id": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "name": "Voice Agent Studio (browser \"call\", $0 to run)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 1,
+      "evidence": "# Voice Agent Studio (browser \"call\", $0 to run)"
+    },
+    {
+      "id": "ent_accounts",
+      "name": "Accounts",
+      "type": "Component/Requirement",
+      "description": "— sign up / log in; each user's agents are private to them",
+      "source": "README.md",
+      "line": 7,
+      "evidence": "- **Accounts** — sign up / log in; each user's agents are private to them"
+    },
+    {
+      "id": "ent_agent_designer",
+      "name": "Agent designer",
+      "type": "Component/Requirement",
+      "description": "— create / edit / delete agents (local SQLite)",
+      "source": "README.md",
+      "line": 8,
+      "evidence": "- **Agent designer** — create / edit / delete agents (local SQLite)"
+    },
+    {
+      "id": "ent_knowledge_base_rag_",
+      "name": "Knowledge base (RAG)",
+      "type": "Component/Requirement",
+      "description": "— upload `.txt` / `.md` / `.pdf` or paste text; keyword retrieval",
+      "source": "README.md",
+      "line": 9,
+      "evidence": "- **Knowledge base (RAG)** — upload `.txt` / `.md` / `.pdf` or paste text; keyword retrieval"
+    },
+    {
+      "id": "ent_tools",
+      "name": "Tools",
+      "type": "Component/Requirement",
+      "description": "— agent can call `save_booking`; optionally POST each booking to a **webhook**",
+      "source": "README.md",
+      "line": 10,
+      "evidence": "- **Tools** — agent can call `save_booking`; optionally POST each booking to a **webhook**"
+    },
+    {
+      "id": "ent_call_history",
+      "name": "Call history",
+      "type": "Component/Requirement",
+      "description": "— full transcripts per call",
+      "source": "README.md",
+      "line": 11,
+      "evidence": "- **Call history** — full transcripts per call"
+    },
+    {
+      "id": "ent_barge_in",
+      "name": "Barge-in",
+      "type": "Component/Requirement",
+      "description": "— interrupt the agent while it speaks (per-agent toggle)",
+      "source": "README.md",
+      "line": 12,
+      "evidence": "- **Barge-in** — interrupt the agent while it speaks (per-agent toggle)"
+    },
+    {
+      "id": "ent_speech_in_out",
+      "name": "Speech in/out",
+      "type": "Component/Requirement",
+      "description": "— browser Web Speech API (free) · **Brain** — Groq free tier (Llama 3.1 8B)",
+      "source": "README.md",
+      "line": 13,
+      "evidence": "- **Speech in/out** — browser Web Speech API (free) · **Brain** — Groq free tier (Llama 3.1 8B)"
+    },
+    {
+      "id": "sec_run_locally",
+      "name": "Run locally",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 15,
+      "evidence": "## Run locally"
+    },
+    {
+      "id": "sec_using_it",
+      "name": "Using it",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 33,
+      "evidence": "## Using it"
+    },
+    {
+      "id": "sec_make_bookings_actionable_webhook_",
+      "name": "Make bookings actionable (webhook)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 43,
+      "evidence": "## Make bookings actionable (webhook)"
+    },
+    {
+      "id": "sec_deploy_it_so_others_can_use_it_",
+      "name": "Deploy it (so others can use it)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 56,
+      "evidence": "## Deploy it (so others can use it)"
+    },
+    {
+      "id": "sec_in_another_install_cloudflared_or_ngrok_",
+      "name": "in another (install cloudflared or ngrok):",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 64,
+      "evidence": "# in another (install cloudflared or ngrok):"
+    },
+    {
+      "id": "sec_switching_the_brain_still_free_no_code_change_",
+      "name": "Switching the brain (still free, no code change)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 77,
+      "evidence": "## Switching the brain (still free, no code change)"
+    },
+    {
+      "id": "sec_notes_limits",
+      "name": "Notes & limits",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 82,
+      "evidence": "## Notes & limits"
+    },
+    {
+      "id": "ent_auth",
+      "name": "Auth",
+      "type": "Component/Requirement",
+      "description": "is cookie-session based (passwords hashed with PBKDF2). Fine for an MVP; for",
+      "source": "README.md",
+      "line": 84,
+      "evidence": "- **Auth** is cookie-session based (passwords hashed with PBKDF2). Fine for an MVP; for"
+    },
+    {
+      "id": "ent_chrome_edge_only",
+      "name": "Chrome/Edge only",
+      "type": "Component/Requirement",
+      "description": "for calls. **Barge-in + laptop speakers** can self-trigger from echo",
+      "source": "README.md",
+      "line": 87,
+      "evidence": "- **Chrome/Edge only** for calls. **Barge-in + laptop speakers** can self-trigger from echo"
+    },
+    {
+      "id": "sec_parsing_tests_testautolev_py_uses_the_al_files_in_this_directory_as_inputs_and_checks",
+      "name": "parsing/tests/testautolev.py uses the .al files in this directory as inputs and checks",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 1,
+      "evidence": "# parsing/tests/test_autolev.py uses the .al files in this directory as inputs and checks"
+    },
+    {
+      "id": "sec_the_equivalence_of_the_parser_generated_codes_and_the_respective_py_files_",
+      "name": "the equivalence of the parser generated codes and the respective .py files.",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 2,
+      "evidence": "# the equivalence of the parser generated codes and the respective .py files."
+    },
+    {
+      "id": "sec_by_default_this_directory_contains_tests_for_all_rules_of_the_parser_",
+      "name": "By default, this directory contains tests for all rules of the parser.",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 4,
+      "evidence": "# By default, this directory contains tests for all rules of the parser."
+    },
+    {
+      "id": "sec_additional_tests_consisting_of_full_physics_examples_shall_be_made_available_soon_in",
+      "name": "Additional tests consisting of full physics examples shall be made available soon in",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 6,
+      "evidence": "# Additional tests consisting of full physics examples shall be made available soon in"
+    },
+    {
+      "id": "sec_the_form_of_another_repository_one_shall_be_able_to_copy_the_contents_of_that_repo",
+      "name": "the form of another repository. One shall be able to copy the contents of that repo",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 7,
+      "evidence": "# the form of another repository. One shall be able to copy the contents of that repo"
+    },
+    {
+      "id": "sec_to_this_folder_and_use_those_tests_after_uncommenting_the_respective_code_in",
+      "name": "to this folder and use those tests after uncommenting the respective code in",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 8,
+      "evidence": "# to this folder and use those tests after uncommenting the respective code in"
+    },
+    {
+      "id": "sec_parsing_tests_testautolev_py_",
+      "name": "parsing/tests/testautolev.py.",
+      "type": "Section/Module",
+      "description": "Specification section from .venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "source": ".venv\\Lib\\site-packages\\sympy\\parsing\\autolev\\test-examples\\README.txt",
+      "line": 9,
+      "evidence": "# parsing/tests/test_autolev.py."
+    },
+    {
+      "id": "sec_voice_agent_studio",
+      "name": "Voice Agent Studio",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 1,
+      "evidence": "# Voice Agent Studio"
+    },
+    {
+      "id": "sec_key_features",
+      "name": "Key Features",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 9,
+      "evidence": "## Key Features"
+    },
+    {
+      "id": "ent_multi_tenant_studio",
+      "name": "Multi-Tenant Studio",
+      "type": "Component/Requirement",
+      "description": "User authentication with session cookies, isolated agent workspaces, and customizable system prompts.",
+      "source": "README.md",
+      "line": 11,
+      "evidence": "- **Multi-Tenant Studio**: User authentication with session cookies, isolated agent workspaces, and customizable system prompts."
+    },
+    {
+      "id": "ent_transactional_booking_engine",
+      "name": "Transactional Booking Engine",
+      "type": "Component/Requirement",
+      "description": "Concurrency-safe slot validation (`BEGIN IMMEDIATE` SQLite transactions), webhook dispatch, and an internal reliable outbox table.",
+      "source": "README.md",
+      "line": 16,
+      "evidence": "- **Transactional Booking Engine**: Concurrency-safe slot validation (`BEGIN IMMEDIATE` SQLite transactions), webhook dispatch, and an internal reliable outbox "
+    },
+    {
+      "id": "ent_google_calendar",
+      "name": "Google Calendar",
+      "type": "Component/Requirement",
+      "description": "Automatic event scheduling, conflict checks, and attendee booking.",
+      "source": "README.md",
+      "line": 18,
+      "evidence": "- **Google Calendar**: Automatic event scheduling, conflict checks, and attendee booking."
+    },
+    {
+      "id": "ent_google_meet",
+      "name": "Google Meet",
+      "type": "Component/Requirement",
+      "description": "Automated video conference link generation.",
+      "source": "README.md",
+      "line": 19,
+      "evidence": "- **Google Meet**: Automated video conference link generation."
+    },
+    {
+      "id": "ent_google_sheets",
+      "name": "Google Sheets",
+      "type": "Component/Requirement",
+      "description": "Real-time row appending and bulk booking synchronization.",
+      "source": "README.md",
+      "line": 20,
+      "evidence": "- **Google Sheets**: Real-time row appending and bulk booking synchronization."
+    },
+    {
+      "id": "ent_google_docs_drive",
+      "name": "Google Docs & Drive",
+      "type": "Component/Requirement",
+      "description": "Direct document parsing into agent RAG knowledge bases.",
+      "source": "README.md",
+      "line": 21,
+      "evidence": "- **Google Docs & Drive**: Direct document parsing into agent RAG knowledge bases."
+    },
+    {
+      "id": "ent_evaluation_reproducibility",
+      "name": "Evaluation & Reproducibility",
+      "type": "Component/Requirement",
+      "description": "Complete research benchmark suite for latency CDF, PII detection, barge-in trade-offs, and QPO scaling.",
+      "source": "README.md",
+      "line": 30,
+      "evidence": "- **Evaluation & Reproducibility**: Complete research benchmark suite for latency CDF, PII detection, barge-in trade-offs, and QPO scaling."
+    },
+    {
+      "id": "sec_project_structure",
+      "name": "Project Structure",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 34,
+      "evidence": "## Project Structure"
+    },
+    {
+      "id": "sec_quick_start_local_",
+      "name": "Quick Start (Local)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 65,
+      "evidence": "## Quick Start (Local)"
+    },
+    {
+      "id": "sec_1_prerequisites",
+      "name": "1. Prerequisites",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 67,
+      "evidence": "### 1. Prerequisites"
+    },
+    {
+      "id": "sec_2_environment_setup",
+      "name": "2. Environment Setup",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 71,
+      "evidence": "### 2. Environment Setup"
+    },
+    {
+      "id": "sec_3_install_dependencies",
+      "name": "3. Install Dependencies",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 85,
+      "evidence": "### 3. Install Dependencies"
+    },
+    {
+      "id": "sec_4_run_application",
+      "name": "4. Run Application",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 92,
+      "evidence": "### 4. Run Application"
+    },
+    {
+      "id": "sec_production_deployment_docker_compose_",
+      "name": "Production Deployment (Docker Compose)",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 101,
+      "evidence": "## Production Deployment (Docker Compose)"
+    },
+    {
+      "id": "sec_copy_environment_file",
+      "name": "Copy environment file",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 106,
+      "evidence": "# Copy environment file"
+    },
+    {
+      "id": "sec_start_stack",
+      "name": "Start stack",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 109,
+      "evidence": "# Start stack"
+    },
+    {
+      "id": "sec_view_logs",
+      "name": "View logs",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 112,
+      "evidence": "# View logs"
+    },
+    {
+      "id": "sec_environment_variables",
+      "name": "Environment Variables",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 120,
+      "evidence": "## Environment Variables"
+    },
+    {
+      "id": "sec_google_workspace_integration_setup",
+      "name": "Google Workspace Integration Setup",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 136,
+      "evidence": "## Google Workspace Integration Setup"
+    },
+    {
+      "id": "api_post_api_agents_id_google_sync_sheets",
+      "name": "POST /api/agents/{id}/google/sync-sheets",
+      "type": "API_Endpoint",
+      "description": "- `POST /api/agents/{id}/google/sync-sheets` — Sync bookings to Google Sheets.",
+      "source": "README.md",
+      "line": 145,
+      "evidence": "- `POST /api/agents/{id}/google/sync-sheets` — Sync bookings to Google Sheets."
+    },
+    {
+      "id": "api_post_api_agents_id_google_import_doc",
+      "name": "POST /api/agents/{id}/google/import-doc",
+      "type": "API_Endpoint",
+      "description": "- `POST /api/agents/{id}/google/import-doc` — Parse Google Doc directly into agent knowledge base.",
+      "source": "README.md",
+      "line": 146,
+      "evidence": "- `POST /api/agents/{id}/google/import-doc` — Parse Google Doc directly into agent knowledge base."
+    },
+    {
+      "id": "api_post_api_agents_id_google_test_calendar",
+      "name": "POST /api/agents/{id}/google/test-calendar",
+      "type": "API_Endpoint",
+      "description": "- `POST /api/agents/{id}/google/test-calendar` — Verify Google Calendar event creation.",
+      "source": "README.md",
+      "line": 147,
+      "evidence": "- `POST /api/agents/{id}/google/test-calendar` — Verify Google Calendar event creation."
+    },
+    {
+      "id": "sec_testing_research_benchmarks",
+      "name": "Testing & Research Benchmarks",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 151,
+      "evidence": "## Testing & Research Benchmarks"
+    },
+    {
+      "id": "sec_run_automated_tests",
+      "name": "Run Automated Tests",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 153,
+      "evidence": "### Run Automated Tests"
+    },
+    {
+      "id": "sec_run_benchmarks",
+      "name": "Run Benchmarks",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 158,
+      "evidence": "### Run Benchmarks"
+    },
+    {
+      "id": "ent_qpo_solvers_evaluation",
+      "name": "QPO Solvers Evaluation",
+      "type": "Component/Requirement",
+      "description": "`python -m qpo.run_all`",
+      "source": "README.md",
+      "line": 160,
+      "evidence": "- **QPO Solvers Evaluation**: `python -m qpo.run_all`"
+    },
+    {
+      "id": "ent_pii_guardrail_evaluation",
+      "name": "PII Guardrail Evaluation",
+      "type": "Component/Requirement",
+      "description": "`python scripts/eval_pii.py`",
+      "source": "README.md",
+      "line": 161,
+      "evidence": "- **PII Guardrail Evaluation**: `python scripts/eval_pii.py`"
+    },
+    {
+      "id": "ent_barge_in_vad_tradeoff",
+      "name": "Barge-in VAD Tradeoff",
+      "type": "Component/Requirement",
+      "description": "`python scripts/eval_bargein.py`",
+      "source": "README.md",
+      "line": 162,
+      "evidence": "- **Barge-in VAD Tradeoff**: `python scripts/eval_bargein.py`"
+    },
+    {
+      "id": "ent_latency_benchmark",
+      "name": "Latency Benchmark",
+      "type": "Component/Requirement",
+      "description": "`python scripts/bench_latency.py --config cloud-hybrid`",
+      "source": "README.md",
+      "line": 163,
+      "evidence": "- **Latency Benchmark**: `python scripts/bench_latency.py --config cloud-hybrid`"
+    },
+    {
+      "id": "ent_generate_latex_tables",
+      "name": "Generate LaTeX Tables",
+      "type": "Component/Requirement",
+      "description": "`python research/make_tables.py`",
+      "source": "README.md",
+      "line": 164,
+      "evidence": "- **Generate LaTeX Tables**: `python research/make_tables.py`"
+    },
+    {
+      "id": "ent_verify_checklist",
+      "name": "Verify Checklist",
+      "type": "Component/Requirement",
+      "description": "See [CHECKLIST.md](CHECKLIST.md)",
+      "source": "README.md",
+      "line": 165,
+      "evidence": "- **Verify Checklist**: See [CHECKLIST.md](CHECKLIST.md)"
+    },
+    {
+      "id": "sec__web_framework_",
+      "name": "── Web framework ────────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 1,
+      "evidence": "# ── Web framework ────────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec__document_parsing_",
+      "name": "── Document parsing ─────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 9,
+      "evidence": "# ── Document parsing ─────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec__quantum_optimisation_stack_",
+      "name": "── Quantum / optimisation stack ─────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 12,
+      "evidence": "# ── Quantum / optimisation stack ─────────────────────────────────────────────"
+    },
+    {
+      "id": "sec_note_pennylane_and_docplex_removed_not_used_in_any_code_path_",
+      "name": "Note: pennylane and docplex removed (not used in any code path).",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 13,
+      "evidence": "# Note: pennylane and docplex removed (not used in any code path)."
+    },
+    {
+      "id": "sec__speech_audio_",
+      "name": "── Speech / audio ───────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 19,
+      "evidence": "# ── Speech / audio ───────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec_pyttsx3_removed_not_used_in_any_code_path_use_ttsprovider_edge_or_piper_",
+      "name": "pyttsx3 removed — not used in any code path (use TTSPROVIDER=edge or piper)",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 21,
+      "evidence": "# pyttsx3 removed — not used in any code path (use TTS_PROVIDER=edge or piper)"
+    },
+    {
+      "id": "sec__numerical_ml_",
+      "name": "── Numerical / ML ───────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 24,
+      "evidence": "# ── Numerical / ML ───────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec__retrieval_evaluation_",
+      "name": "── Retrieval evaluation ─────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 28,
+      "evidence": "# ── Retrieval evaluation ─────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec__asr_evaluation_",
+      "name": "── ASR evaluation ───────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 31,
+      "evidence": "# ── ASR evaluation ───────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "sec__system_info_optional_used_by_envcapture_py_",
+      "name": "── System info (optional, used by envcapture.py) ───────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 34,
+      "evidence": "# ── System info (optional, used by env_capture.py) ───────────────────────────"
+    },
+    {
+      "id": "sec__testing_",
+      "name": "── Testing ──────────────────────────────────────────────────────────────────",
+      "type": "Section/Module",
+      "description": "Specification section from requirements.txt",
+      "source": "requirements.txt",
+      "line": 37,
+      "evidence": "# ── Testing ──────────────────────────────────────────────────────────────────"
+    },
+    {
+      "id": "ent_inbound_calls",
+      "name": "Inbound Calls",
+      "type": "Component/Requirement",
+      "description": "TwiML `<Connect><Stream>` webhook with multi-agent phone number routing.",
+      "source": "README.md",
+      "line": 24,
+      "evidence": "- **Inbound Calls**: TwiML `<Connect><Stream>` webhook with multi-agent phone number routing."
+    },
+    {
+      "id": "ent_bidirectional_websocket_media_stream",
+      "name": "Bidirectional WebSocket Media Stream",
+      "type": "Component/Requirement",
+      "description": "Real-time μ-law 8kHz <-> 16kHz PCM transcoding.",
+      "source": "README.md",
+      "line": 25,
+      "evidence": "- **Bidirectional WebSocket Media Stream**: Real-time μ-law 8kHz <-> 16kHz PCM transcoding."
+    },
+    {
+      "id": "ent_hardware_cloud_pipeline",
+      "name": "Hardware/Cloud Pipeline",
+      "type": "Component/Requirement",
+      "description": "Energy VAD, barge-in interruption, Whisper STT, LLM + tools, SAPI5/Edge-TTS.",
+      "source": "README.md",
+      "line": 26,
+      "evidence": "- **Hardware/Cloud Pipeline**: Energy VAD, barge-in interruption, Whisper STT, LLM + tools, SAPI5/Edge-TTS."
+    },
+    {
+      "id": "ent_outbound_calls",
+      "name": "Outbound Calls",
+      "type": "Component/Requirement",
+      "description": "Trigger direct phone calls to real phone numbers with sandbox fallback.",
+      "source": "README.md",
+      "line": 27,
+      "evidence": "- **Outbound Calls**: Trigger direct phone calls to real phone numbers with sandbox fallback."
+    },
+    {
+      "id": "sec_twilio_voice_telephony_setup",
+      "name": "Twilio Voice Telephony Setup",
+      "type": "Section/Module",
+      "description": "Specification section from README.md",
+      "source": "README.md",
+      "line": 148,
+      "evidence": "## Twilio Voice Telephony Setup"
+    },
+    {
+      "id": "ent_voice_configuration",
+      "name": "Voice Configuration",
+      "type": "Component/Requirement",
+      "description": "\"A Call Comes In\" -> **Webhook (HTTP POST)**",
+      "source": "README.md",
+      "line": 160,
+      "evidence": "- **Voice Configuration**: \"A Call Comes In\" -> **Webhook (HTTP POST)**"
+    },
+    {
+      "id": "ent_url",
+      "name": "URL",
+      "type": "Component/Requirement",
+      "description": "`https://your-domain.com/api/twilio/voice`",
+      "source": "README.md",
+      "line": 161,
+      "evidence": "- **URL**: `https://your-domain.com/api/twilio/voice`"
+    },
+    {
+      "id": "api_post_api_agents_id_twilio_dial",
+      "name": "POST /api/agents/{id}/twilio/dial",
+      "type": "API_Endpoint",
+      "description": "3. **Outbound Calling**: Use the studio's \"📞 Twilio Phone\" tab or call `POST /api/agents/{id}/twilio/dial`.",
+      "source": "README.md",
+      "line": 162,
+      "evidence": "3. **Outbound Calling**: Use the studio's \"📞 Twilio Phone\" tab or call `POST /api/agents/{id}/twilio/dial`."
+    }
+  ],
+  "relations": [
+    {
+      "source": "sec_anti_slop_filter_quality_rules_upstream_miqdadbadjuber_anti_slop_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_filter_not_style_guide_",
+      "evidence": "- **Filter, Not Style Guide:** Run purpose tests before aesthetic choices (reject ungrounded neon glows, fake metrics, generic sparkle badges).",
+      "source_file": "CLAUDE.md",
+      "line": 31
+    },
+    {
+      "source": "sec_anti_slop_filter_quality_rules_upstream_miqdadbadjuber_anti_slop_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_liveliness_grounding_",
+      "evidence": "- **Liveliness & Grounding:** Rely on `DESIGN.md` or explicit brief for design soul; enforce WCAG AA human accessibility.",
+      "source_file": "CLAUDE.md",
+      "line": 32
+    },
+    {
+      "source": "sec_anti_slop_filter_quality_rules_upstream_miqdadbadjuber_anti_slop_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_dedicated_skills_",
+      "evidence": "- **Dedicated Skills:** Read `skills/antislop/SKILL.md` (core), `skills/antislop-ui/SKILL.md`, `skills/antislop-copywriting/SKILL.md`, `skills/antislop-human/SK",
+      "source_file": "CLAUDE.md",
+      "line": 33
+    },
+    {
+      "source": "sec_output_generation_token_saver_rule_ponytail_mode_full_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_yagni_shortest_diff_",
+      "evidence": "- **YAGNI & Shortest Diff:** Only write code that must exist. Reach for standard library before custom code or new dependencies. Shortest working diff wins.",
+      "source_file": "CLAUDE.md",
+      "line": 37
+    },
+    {
+      "source": "sec_output_generation_token_saver_rule_ponytail_mode_full_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_terse_responses_",
+      "evidence": "- **Terse Responses:** Code first. At most 3 short lines of explanation: what was skipped, when to add it. No essays, no unsolicited design tours, no feature wa",
+      "source_file": "CLAUDE.md",
+      "line": 38
+    },
+    {
+      "source": "sec_4_data_flow_pii_boundaries",
+      "relation": "EXPOSES_ENDPOINT",
+      "target": "api_get_api_calls_id_",
+      "evidence": "Served via GET /api/calls/{id}",
+      "source_file": "docs\\THREAT_MODEL.md",
+      "line": 116
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_accounts",
+      "evidence": "- **Accounts** — sign up / log in; each user's agents are private to them",
+      "source_file": "README.md",
+      "line": 7
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_agent_designer",
+      "evidence": "- **Agent designer** — create / edit / delete agents (local SQLite)",
+      "source_file": "README.md",
+      "line": 8
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_knowledge_base_rag_",
+      "evidence": "- **Knowledge base (RAG)** — upload `.txt` / `.md` / `.pdf` or paste text; keyword retrieval",
+      "source_file": "README.md",
+      "line": 9
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_tools",
+      "evidence": "- **Tools** — agent can call `save_booking`; optionally POST each booking to a **webhook**",
+      "source_file": "README.md",
+      "line": 10
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_call_history",
+      "evidence": "- **Call history** — full transcripts per call",
+      "source_file": "README.md",
+      "line": 11
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_barge_in",
+      "evidence": "- **Barge-in** — interrupt the agent while it speaks (per-agent toggle)",
+      "source_file": "README.md",
+      "line": 12
+    },
+    {
+      "source": "sec_voice_agent_studio_browser_call_0_to_run_",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_speech_in_out",
+      "evidence": "- **Speech in/out** — browser Web Speech API (free) · **Brain** — Groq free tier (Llama 3.1 8B)",
+      "source_file": "README.md",
+      "line": 13
+    },
+    {
+      "source": "sec_notes_limits",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_auth",
+      "evidence": "- **Auth** is cookie-session based (passwords hashed with PBKDF2). Fine for an MVP; for",
+      "source_file": "README.md",
+      "line": 84
+    },
+    {
+      "source": "sec_notes_limits",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_chrome_edge_only",
+      "evidence": "- **Chrome/Edge only** for calls. **Barge-in + laptop speakers** can self-trigger from echo",
+      "source_file": "README.md",
+      "line": 87
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_multi_tenant_studio",
+      "evidence": "- **Multi-Tenant Studio**: User authentication with session cookies, isolated agent workspaces, and customizable system prompts.",
+      "source_file": "README.md",
+      "line": 11
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_knowledge_base_rag_",
+      "evidence": "- **Knowledge Base (RAG)**: BM25 keyword index per agent with support for `.txt`, `.md`, `.pdf`, and direct text ingestion; supports Google Docs / Drive sync.",
+      "source_file": "README.md",
+      "line": 15
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_transactional_booking_engine",
+      "evidence": "- **Transactional Booking Engine**: Concurrency-safe slot validation (`BEGIN IMMEDIATE` SQLite transactions), webhook dispatch, and an internal reliable outbox ",
+      "source_file": "README.md",
+      "line": 16
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_google_calendar",
+      "evidence": "- **Google Calendar**: Automatic event scheduling, conflict checks, and attendee booking.",
+      "source_file": "README.md",
+      "line": 18
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_google_meet",
+      "evidence": "- **Google Meet**: Automated video conference link generation.",
+      "source_file": "README.md",
+      "line": 19
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_google_sheets",
+      "evidence": "- **Google Sheets**: Real-time row appending and bulk booking synchronization.",
+      "source_file": "README.md",
+      "line": 20
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_google_docs_drive",
+      "evidence": "- **Google Docs & Drive**: Direct document parsing into agent RAG knowledge bases.",
+      "source_file": "README.md",
+      "line": 21
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_evaluation_reproducibility",
+      "evidence": "- **Evaluation & Reproducibility**: Complete research benchmark suite for latency CDF, PII detection, barge-in trade-offs, and QPO scaling.",
+      "source_file": "README.md",
+      "line": 30
+    },
+    {
+      "source": "sec_google_workspace_integration_setup",
+      "relation": "EXPOSES_ENDPOINT",
+      "target": "api_post_api_agents_id_google_sync_sheets",
+      "evidence": "- `POST /api/agents/{id}/google/sync-sheets` — Sync bookings to Google Sheets.",
+      "source_file": "README.md",
+      "line": 145
+    },
+    {
+      "source": "sec_google_workspace_integration_setup",
+      "relation": "EXPOSES_ENDPOINT",
+      "target": "api_post_api_agents_id_google_import_doc",
+      "evidence": "- `POST /api/agents/{id}/google/import-doc` — Parse Google Doc directly into agent knowledge base.",
+      "source_file": "README.md",
+      "line": 146
+    },
+    {
+      "source": "sec_google_workspace_integration_setup",
+      "relation": "EXPOSES_ENDPOINT",
+      "target": "api_post_api_agents_id_google_test_calendar",
+      "evidence": "- `POST /api/agents/{id}/google/test-calendar` — Verify Google Calendar event creation.",
+      "source_file": "README.md",
+      "line": 147
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_qpo_solvers_evaluation",
+      "evidence": "- **QPO Solvers Evaluation**: `python -m qpo.run_all`",
+      "source_file": "README.md",
+      "line": 160
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_pii_guardrail_evaluation",
+      "evidence": "- **PII Guardrail Evaluation**: `python scripts/eval_pii.py`",
+      "source_file": "README.md",
+      "line": 161
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_barge_in_vad_tradeoff",
+      "evidence": "- **Barge-in VAD Tradeoff**: `python scripts/eval_bargein.py`",
+      "source_file": "README.md",
+      "line": 162
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_latency_benchmark",
+      "evidence": "- **Latency Benchmark**: `python scripts/bench_latency.py --config cloud-hybrid`",
+      "source_file": "README.md",
+      "line": 163
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_generate_latex_tables",
+      "evidence": "- **Generate LaTeX Tables**: `python research/make_tables.py`",
+      "source_file": "README.md",
+      "line": 164
+    },
+    {
+      "source": "sec_run_benchmarks",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_verify_checklist",
+      "evidence": "- **Verify Checklist**: See [CHECKLIST.md](CHECKLIST.md)",
+      "source_file": "README.md",
+      "line": 165
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_inbound_calls",
+      "evidence": "- **Inbound Calls**: TwiML `<Connect><Stream>` webhook with multi-agent phone number routing.",
+      "source_file": "README.md",
+      "line": 24
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_bidirectional_websocket_media_stream",
+      "evidence": "- **Bidirectional WebSocket Media Stream**: Real-time μ-law 8kHz <-> 16kHz PCM transcoding.",
+      "source_file": "README.md",
+      "line": 25
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_hardware_cloud_pipeline",
+      "evidence": "- **Hardware/Cloud Pipeline**: Energy VAD, barge-in interruption, Whisper STT, LLM + tools, SAPI5/Edge-TTS.",
+      "source_file": "README.md",
+      "line": 26
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_outbound_calls",
+      "evidence": "- **Outbound Calls**: Trigger direct phone calls to real phone numbers with sandbox fallback.",
+      "source_file": "README.md",
+      "line": 27
+    },
+    {
+      "source": "sec_key_features",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_call_history",
+      "evidence": "- **Call History**: Call SID tracking, duration, caller ID redaction, and full transcripts.",
+      "source_file": "README.md",
+      "line": 28
+    },
+    {
+      "source": "sec_twilio_voice_telephony_setup",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_voice_configuration",
+      "evidence": "- **Voice Configuration**: \"A Call Comes In\" -> **Webhook (HTTP POST)**",
+      "source_file": "README.md",
+      "line": 160
+    },
+    {
+      "source": "sec_twilio_voice_telephony_setup",
+      "relation": "DEFINES_REQUIREMENT",
+      "target": "ent_url",
+      "evidence": "- **URL**: `https://your-domain.com/api/twilio/voice`",
+      "source_file": "README.md",
+      "line": 161
+    },
+    {
+      "source": "sec_twilio_voice_telephony_setup",
+      "relation": "EXPOSES_ENDPOINT",
+      "target": "api_post_api_agents_id_twilio_dial",
+      "evidence": "3. **Outbound Calling**: Use the studio's \"📞 Twilio Phone\" tab or call `POST /api/agents/{id}/twilio/dial`.",
+      "source_file": "README.md",
+      "line": 162
+    }
+  ],
+  "stats": {
+    "total_sources": 16,
+    "total_entities": 105,
+    "total_relations": 40,
+    "token_savings_estimate": "85-95%"
+  }
+}

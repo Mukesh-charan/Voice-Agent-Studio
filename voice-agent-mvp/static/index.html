@@ -62,6 +62,7 @@
           <button class="tab" data-tab="bookings">Bookings</button>
           <button class="tab" data-tab="guardrails">🛡️ Guardrails &amp; Roles</button>
           <button class="tab" data-tab="google">🌐 Google Integrations</button>
+          <button class="tab" data-tab="twilio">📞 Twilio Phone</button>
           <button class="tab" data-tab="embed">Embed</button>
           <button class="tab" data-tab="docker">🐳 Docker Appliance</button>
         </div>
@@ -97,7 +98,11 @@
             <label class="check"><input id="use_knowledge" type="checkbox" /> Use knowledge base</label>
             <label class="check"><input id="tools_enabled" type="checkbox" /> Capture bookings/leads</label>
             <label class="check"><input id="barge_in" type="checkbox" checked /> Allow barge-in (interrupt while speaking)</label>
+            <label class="check"><input id="twilio_enabled" type="checkbox" /> Enable Twilio telephone calls</label>
           </div>
+          <label>Twilio phone number for this agent (e.g. +12345678901)
+            <input id="twilio_phone_number" type="text" placeholder="+12345678901" />
+          </label>
           <label>Booking webhook URL (optional) — POSTs each captured booking as JSON
             <input id="booking_webhook" type="text" placeholder="https://hooks.zapier.com/… or your endpoint" />
           </label>
@@ -287,6 +292,71 @@
             </p>
             <textarea id="google_credentials_json" rows="3" placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'></textarea>
             <p id="googleCredStatus" class="hint" style="margin-top:4px;"></p>
+          </div>
+        </div>
+
+        <!-- Twilio Phone Integration -->
+        <div id="tab-twilio" class="tab-panel card hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>📞 Twilio Real-Time Voice Telephony</h2>
+            <div id="twilioStatusBadge" class="role-badge" style="background:var(--card); border:1px solid var(--border);">Checking Twilio...</div>
+          </div>
+          <p id="twilioHint" class="hint">Connect real-world telephone calls to your AI agents via Twilio PSTN and bidirectional WebSocket streaming.</p>
+
+          <!-- Outbound Dial Pad Card -->
+          <div class="google-card" style="margin-top:12px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📱</span>
+                <strong>Outbound Telephone Call</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:4px 0 10px;">
+              Trigger an immediate outbound telephone call from this agent to any real cell phone or landline number.
+            </p>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="dialPhoneNumber" type="tel" placeholder="+1 (555) 234-5678" style="flex:1;" />
+              <button id="dialNowBtn" class="primary" style="white-space:nowrap;">📞 Dial Call</button>
+            </div>
+            <div id="dialStatusBox" style="margin-top:10px; font-size:13px; color:var(--muted); padding:8px 12px; background:var(--card); border-radius:6px; display:none;"></div>
+          </div>
+
+          <!-- Inbound Phone Routing & Webhook Card -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🌐</span>
+                <strong>Inbound Call Webhook (Twilio Console Setup)</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:6px 0 8px;">
+              In your <a href="https://console.twilio.com/" target="_blank" style="color:var(--accent);">Twilio Console</a>, open your Phone Number settings and configure the voice webhook:
+            </p>
+            <div style="background:var(--card); padding:10px; border-radius:6px; font-family:monospace; font-size:13px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+              <span id="twilioWebhookUrlText">https://your-domain.com/api/twilio/voice</span>
+              <button id="copyTwilioWebhookBtn" class="small">Copy URL</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin-top:8px;">
+              HTTP Method: <strong>HTTP POST</strong> · TwiML connects incoming calls to real-time low-latency audio stream.
+            </p>
+          </div>
+
+          <!-- Multi-Agent Phone Routing Table -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🔀</span>
+                <strong>Dedicated Phone Number Routing</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:4px 0 10px;">
+              Assign specific inbound phone numbers to route callers directly to this or other agents.
+            </p>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="newRoutePhone" type="tel" placeholder="+1 (555) 000-1111" style="flex:1;" />
+              <button id="addRouteBtn" class="small primary" style="white-space:nowrap;">+ Assign to Agent</button>
+            </div>
+            <div id="twilioRouteList" class="list" style="margin-top:12px;"></div>
           </div>
         </div>
 

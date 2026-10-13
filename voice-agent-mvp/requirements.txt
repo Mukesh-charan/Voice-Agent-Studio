@@ -4,6 +4,7 @@ uvicorn[standard]==0.34.0
 httpx==0.28.1
 python-dotenv==1.0.1
 python-multipart==0.0.20
+twilio>=9.0.0
 
 # ── Document parsing ─────────────────────────────────────────────────────────
 pypdf==5.1.0
@@ -17,7 +18,7 @@ qiskit-algorithms>=0.4.0
 
 # ── Speech / audio ───────────────────────────────────────────────────────────
 edge-tts>=7.0.0
-# pyttsx3 removed — not used in any code path (use TTS_PROVIDER=edge or piper)
+pyttsx3>=2.90
 faster-whisper>=1.0.0
 
 # ── Numerical / ML ───────────────────────────────────────────────────────────
