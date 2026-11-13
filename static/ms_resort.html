@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MS Resort | Your Stay, Our Care</title>
+
+  <style>
+    :root {
+      --navy: #102a43;
+      --blue: #1769aa;
+      --gold: #d9a441;
+      --cream: #faf7f0;
+      --white: #fff;
+      --text: #243b53;
+      --muted: #627d98;
+      --line: #d9e2ec;
+      --green: #16845b;
+      --shadow: 0 18px 45px rgba(16, 42, 67, .12);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      scroll-behavior: smooth
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit
+    }
+
+    button {
+      cursor: pointer
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, .94);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(217, 226, 236, .8);
+    }
+
+    .nav-inner {
+      max-width: 1180px;
+      margin: auto;
+      padding: 15px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -.5px
+    }
+
+    .logo span {
+      color: var(--gold)
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-weight: 750;
+      transition: .2s;
+    }
+
+    .btn-primary {
+      background: var(--navy);
+      color: white
+    }
+
+    .btn-primary:hover {
+      background: #0b1e31;
+      transform: translateY(-1px)
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: #241b0b
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--navy);
+      border: 1px solid var(--line)
+    }
+
+    .hero {
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(10, 31, 48, .86), rgba(10, 31, 48, .48), rgba(10, 31, 48, .2)),
+        url("https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1800&q=85") center/cover;
+    }
+
+    .hero-content {
+      max-width: 1180px;
+      width: 100%;
+      padding: 90px 22px;
+      color: #fff
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 7px 12px;
+      border: 1px solid rgba(255, 255, 255, .3);
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .1);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase
+    }
+
+    .hero h1 {
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1.02;
+      max-width: 720px;
+      margin: 20px 0 18px;
+      letter-spacing: -2.5px
+    }
+
+    .hero p {
+      max-width: 620px;
+      font-size: 18px;
+      color: #e6edf4;
+      margin: 0 0 30px
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    .booking-card {
+      max-width: 1050px;
+      margin: -50px auto 0;
+      position: relative;
+      z-index: 5;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .quick-book {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.2fr auto;
+      gap: 12px;
+      align-items: end
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: .5px
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      outline: none;
+      background: #fff;
+      color: var(--text)
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(23, 105, 170, .1)
+    }
+
+    .section {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 85px 22px
+    }
+
+    .section-head {
+      max-width: 700px;
+      margin-bottom: 35px
+    }
+
+    .kicker {
+      color: var(--blue);
+      font-weight: 850;
+      font-size: 12px;
+      letter-spacing: 1.3px;
+      text-transform: uppercase
+    }
+
+    h2 {
+      font-size: 40px;
+      line-height: 1.1;
+      margin: 9px 0 12px;
+      color: var(--navy);
+      letter-spacing: -1px
+    }
+
+    .section-head p {
+      color: var(--muted);
+      margin: 0
+    }
+
+    .rooms {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px
+    }
+
+    .room {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(16, 42, 67, .06)
+    }
+
+    .room-img {
+      height: 190px;
+      background-size: cover;
+      background-position: center
+    }
+
+    .room-body {
+      padding: 22px
+    }
+
+    .room h3 {
+      margin: 0 0 7px;
+      font-size: 21px;
+      color: var(--navy)
+    }
+
+    .room p {
+      font-size: 14px;
+      color: var(--muted);
+      min-height: 43px
+    }
+
+    .price {
+      font-size: 24px;
+      font-weight: 850;
+      color: var(--navy);
+      margin: 16px 0
+    }
+
+    .price small {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted)
+    }
+
+    .pill {
+      display: inline-flex;
+      background: #edf8f3;
+      color: var(--green);
+      padding: 5px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800
+    }
+
+    .amenities {
+      background: #102a43;
+      color: white
+    }
+
+    .amenities h2 {
+      color: white
+    }
+
+    .amenity-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px
+    }
+
+    .amenity {
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 14px;
+      padding: 22px
+    }
+
+    .amenity-icon {
+      font-size: 28px;
+      margin-bottom: 10px
+    }
+
+    .amenity strong {
+      display: block;
+      margin-bottom: 5px
+    }
+
+    .amenity span {
+      font-size: 13px;
+      color: #c9d6e2
+    }
+
+    .rooms-map {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      align-items: center
+    }
+
+    .floor-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px
+    }
+
+    .floor {
+      margin-bottom: 18px
+    }
+
+    .floor:last-child {
+      margin-bottom: 0
+    }
+
+    .floor-title {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 800;
+      margin-bottom: 9px
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px
+    }
+
+    .room-box {
+      height: 36px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      font-size: 10px;
+      font-weight: 800
+    }
+
+    .r1 {
+      background: #e8f1f8;
+      color: #1769aa
+    }
+
+    .r2 {
+      background: #fff1d9;
+      color: #9b6810
+    }
+
+    .r3 {
+      background: #f4e7e4;
+      color: #8a4034
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 5px
+    }
+
+    .note {
+      background: #f7f1df;
+      border-left: 4px solid var(--gold);
+      padding: 15px 17px;
+      border-radius: 8px;
+      color: #5b4b27;
+      font-size: 13px
+    }
+
+    .contact {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 25px
+    }
+
+    .contact-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 28px
+    }
+
+    .contact-card h3 {
+      margin-top: 0;
+      color: var(--navy)
+    }
+
+    .footer {
+      background: #081d2d;
+      color: #c7d5df;
+      padding: 28px 22px;
+      text-align: center;
+      font-size: 13px
+    }
+
+    .chat-toggle {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      z-index: 30;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      border: 0;
+      background: var(--gold);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .22);
+      font-size: 25px
+    }
+
+    .chat {
+      position: fixed;
+      right: 22px;
+      bottom: 92px;
+      width: 355px;
+      max-width: calc(100vw - 30px);
+      height: 510px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+      z-index: 29;
+      display: none;
+      overflow: hidden;
+      border: 1px solid var(--line)
+    }
+
+    .chat.open {
+      display: flex;
+      flex-direction: column
+    }
+
+    .chat-head {
+      background: var(--navy);
+      color: white;
+      padding: 17px 18px;
+      display: flex;
+      align-items: center;
+      gap: 11px
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #1e180c;
+      display: grid;
+      place-items: center;
+      font-weight: 900
+    }
+
+    .chat-head small {
+      display: block;
+      color: #cbd7e0;
+      margin-top: 2px
+    }
+
+    .messages {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+      background: #f7f9fb
+    }
+
+    .msg {
+      max-width: 86%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 9px;
+      font-size: 13px
+    }
+
+    .bot {
+      background: white;
+      border: 1px solid var(--line);
+      border-top-left-radius: 4px
+    }
+
+    .user {
+      background: var(--navy);
+      color: white;
+      margin-left: auto;
+      border-top-right-radius: 4px
+    }
+
+    .chat-options {
+      padding: 8px 10px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line)
+    }
+
+    .option {
+      background: #f1f5f8;
+      border: 0;
+      border-radius: 99px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: var(--navy);
+      font-weight: 700
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 9px;
+      border-top: 1px solid var(--line);
+      gap: 7px
+    }
+
+    .chat-input input {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 9px;
+      outline: none
+    }
+
+    .chat-input button {
+      border: 0;
+      background: var(--navy);
+      color: white;
+      border-radius: 9px;
+      padding: 0 13px
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 20, 32, .62);
+      z-index: 50;
+      place-items: center;
+      padding: 18px
+    }
+
+    .modal.show {
+      display: grid
+    }
+
+    .modal-card {
+      width: min(700px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: white;
+      border-radius: 18px;
+      padding: 28px
+    }
+
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start
+    }
+
+    .close {
+      border: 0;
+      background: #f1f5f8;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px
+    }
+
+    .full {
+      grid-column: 1/-1
+    }
+
+    .summary {
+      background: #f6f8fa;
+      border-radius: 12px;
+      padding: 15px;
+      margin: 18px 0;
+      font-size: 14px
+    }
+
+    .success {
+      display: none;
+      text-align: center;
+      padding: 25px
+    }
+
+    .success.show {
+      display: block
+    }
+
+    .success-icon {
+      font-size: 45px
+    }
+
+    @media(max-width:850px) {
+      .nav-links {
+        display: none
+      }
+
+      .quick-book {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .quick-book .btn {
+        grid-column: 1/-1
+      }
+
+      .rooms {
+        grid-template-columns: 1fr
+      }
+
+      .amenity-grid {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .rooms-map,
+      .contact {
+        grid-template-columns: 1fr
+      }
+    }
+
+    @media(max-width:520px) {
+      .hero {
+        min-height: 560px
+      }
+
+      .hero-content {
+        padding-top: 60px
+      }
+
+      .hero h1 {
+        font-size: 44px
+      }
+
+      .booking-card {
+        margin: 0 12px
+      }
+
+      .quick-book,
+      .form-grid {
+        grid-template-columns: 1fr
+      }
+
+      .full {
+        grid-column: auto
+      }
+
+      .room-grid {
+        grid-template-columns: repeat(5, 1fr)
+      }
+
+      .amenity-grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="logo">MS <span>RESORT</span></div>
+      <div class="nav-links">
+        <a href="#rooms">Rooms</a><a href="#amenities">Amenities</a><a href="#availability">Availability</a><a
+          href="#contact">Contact</a>
+      </div>
+      <button class="btn btn-primary" onclick="openBooking()">Book a Room</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-content">
+      <span class="eyebrow">Welcome to MS Resort</span>
+      <h1>A comfortable stay, thoughtfully taken care of.</h1>
+      <p>Relax in spacious rooms, enjoy on-site dining and premium guest services, with everything you need for a
+        pleasant stay.</p>
+      <div class="hero-actions">
+        <button class="btn btn-gold" onclick="openBooking()">Check Availability</button>
+        <a class="btn btn-outline" href="#rooms" style="text-decoration:none">Explore Rooms</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="booking-card" aria-label="Quick booking">
+    <div class="quick-book">
+      <div class="field"><label>Check-in</label><input id="quickIn" type="date"></div>
+      <div class="field"><label>Check-out</label><input id="quickOut" type="date"></div>
+      <div class="field"><label>Room category</label>
+        <select id="quickRoom">
+          <option value="suite">Two-Person Suite — ₹3,000</option>
+          <option value="deluxe">Deluxe Room — ₹6,000</option>
+          <option value="super">Super Deluxe — ₹10,000</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="startQuickBooking()">Check & Book</button>
+    </div>
+  </section>
+
+  <section class="section" id="rooms">
+    <div class="section-head">
+      <div class="kicker">Stay your way</div>
+      <h2>Rooms designed for your comfort.</h2>
+      <p>Four floors, ten rooms per floor, with three clearly defined room categories to suit different group sizes and
+        preferences.</p>
+    </div>
+    <div class="rooms">
+      <article class="room">
+        <div class="room-img"
+          style="background-image:url('https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80')">
+        </div>
+        <div class="room-body">
+          <span class="pill">2 guests</span>
+          <h3>Two-Person Suite</h3>
+          <p>Cozy accommodation for two guests. Available in room positions 01–03 on every floor.</p>
+          <div class="price">₹3,000 <small>/ day & night</small></div>
+          <button class="btn btn-primary" onclick="selectAndBook('suite')">Book Suite</button>
+        </div>
+      </article>
+      <article class="room">
+        <div class="room-img"
+          style="background-image:url('https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=900&q=80')">
+        </div>
+        <div class="room-body">
+          <span class="pill">4 guests</span>
+          <h3>Deluxe Room</h3>
+          <p>Spacious four-person accommodation. Available in room positions 04–07 on every floor.</p>
+          <div class="price">₹6,000 <small>/ day & night</small></div>
+          <button class="btn btn-primary" onclick="selectAndBook('deluxe')">Book Deluxe</button>
+        </div>
+      </article>
+      <article class="room">
+        <div class="room-img"
+          style="background-image:url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80')">
+        </div>
+        <div class="room-body">
+          <span class="pill">4 guests</span>
+          <h3>Super Deluxe</h3>
+          <p>Our premium four-person accommodation. Available in room positions 08–10 on every floor.</p>
+          <div class="price">₹10,000 <small>/ day & night</small></div>
+          <button class="btn btn-primary" onclick="selectAndBook('super')">Book Super Deluxe</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="amenities" id="amenities">
+    <div class="section">
+      <div class="section-head">
+        <div class="kicker" style="color:#e7bb5f">Everything you need</div>
+        <h2>Resort facilities & services.</h2>
+        <p style="color:#c7d5df">Enjoy convenient services throughout your stay.</p>
+      </div>
+      <div class="amenity-grid">
+        <div class="amenity">
+          <div class="amenity-icon">🛎️</div><strong>Room Service</strong><span>Daily cleaning, food delivery and
+            general assistance.</span>
+        </div>
+        <div class="amenity">
+          <div class="amenity-icon">🍽️</div><strong>Restaurant</strong><span>On-site dining available during scheduled
+            operating hours.</span>
+        </div>
+        <div class="amenity">
+          <div class="amenity-icon">🏊</div><strong>Swimming Pool</strong><span>Pool access is available during
+            scheduled pool hours.</span>
+        </div>
+        <div class="amenity">
+          <div class="amenity-icon">📶</div><strong>Free Wi-Fi</strong><span>Complimentary Wi-Fi is available throughout
+            the resort.</span>
+        </div>
+        <div class="amenity">
+          <div class="amenity-icon">🚗</div><strong>Parking</strong><span>Convenient on-site parking is provided for
+            guests.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="availability">
+    <div class="section-head">
+      <div class="kicker">Room inventory</div>
+      <h2>Find your room.</h2>
+      <p>Room numbers use the floor number followed by the room position. For example, 109 means floor one, room
+        position nine.</p>
+    </div>
+    <div class="rooms-map">
+      <div class="floor-card" id="floorCard"></div>
+      <div>
+        <div class="note"><strong>Room categories:</strong> positions 01–03 are Two-Person Suites, 04–07 are Deluxe
+          Rooms, and 08–10 are Super Deluxe Rooms.</div>
+        <p style="color:var(--muted);font-size:14px">Availability is verified as part of the booking flow before guest
+          details are collected. This demo page does not connect to a live reservation database.</p>
+        <button class="btn btn-primary" onclick="openBooking()">Start a Reservation</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="section-head">
+      <div class="kicker">Need assistance?</div>
+      <h2>Ramya is here to help.</h2>
+      <p>Our virtual receptionist can guide guests through room information and the reservation process.</p>
+    </div>
+    <div class="contact">
+      <div class="contact-card">
+        <h3>Ask Ramya</h3>
+        <p style="color:var(--muted)">Have a question about rooms, facilities or making a reservation? Start a
+          conversation with Ramya.</p>
+      </div>
+      <div class="contact-card">
+        <h3>Guest Information</h3>
+        <p><strong>Room service:</strong> Cleaning, food delivery and general assistance.</p>
+        <p><strong>Dining:</strong> Restaurant operates during fixed scheduled timings.</p>
+        <p><strong>Pool:</strong> Available during scheduled hours; check the daily schedule upon arrival.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">© 2026 MS Resort · Comfortable stays, thoughtful service.</footer>
+
+  <div class="modal" id="bookingModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <div class="kicker">Reservation</div>
+          <h2 style="font-size:30px;margin-top:5px">Book your stay</h2>
+        </div>
+        <button class="close" onclick="closeBooking()">✕</button>
+      </div>
+      <div id="bookingForm">
+        <div class="form-grid">
+          <div class="field"><label>Check-in</label><input id="bookIn" type="date" onchange="updateEstimate()"></div>
+          <div class="field"><label>Check-out</label><input id="bookOut" type="date" onchange="updateEstimate()"></div>
+          <div class="field full"><label>Room category</label>
+            <select id="bookRoom" onchange="updateEstimate()">
+              <option value="suite">Two-Person Suite — ₹3,000 / day & night</option>
+              <option value="deluxe">Deluxe Room — ₹6,000 / day & night</option>
+              <option value="super">Super Deluxe Room — ₹10,000 / day & night</option>
+            </select>
+          </div>
+          <div class="field full"><label>Guest full name</label><input id="guestName" placeholder="Enter full name">
+          </div>
+          <div class="field full"><label>Contact phone number</label><input id="guestPhone"
+              placeholder="Enter phone number" inputmode="tel"></div>
+        </div>
+        <div class="summary" id="estimate">Select your dates to calculate the stay total.</div>
+        <div class="note">Availability is checked before the reservation is submitted. This front-end demo treats the
+          selected category as available; connect the form to your reservation database/API for real inventory.</div>
+        <button class="btn btn-primary" style="width:100%;margin-top:16px" onclick="confirmBooking()">Check Availability
+          & Confirm</button>
+      </div>
+      <div class="success" id="success">
+        <div class="success-icon">✓</div>
+        <h3>Booking confirmed</h3>
+        <p id="successText"></p>
+        <button class="btn btn-primary" onclick="closeBooking()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const roomData = {
+      suite: { name: "Two-Person Suite", price: 3000, capacity: 2, positions: "01–03" },
+      deluxe: { name: "Deluxe Room", price: 6000, capacity: 4, positions: "04–07" },
+      super: { name: "Super Deluxe Room", price: 10000, capacity: 4, positions: "08–10" }
+    };
+
+    function localDateOffset(days) {
+      const d = new Date(); d.setDate(d.getDate() + days);
+      return d.toISOString().split("T")[0];
+    }
+    document.getElementById("quickIn").min = localDateOffset(0);
+    document.getElementById("quickOut").min = localDateOffset(1);
+    document.getElementById("bookIn").min = localDateOffset(0);
+    document.getElementById("bookOut").min = localDateOffset(1);
+
+    function selectAndBook(type) {
+      openBooking();
+      document.getElementById("bookRoom").value = type;
+      updateEstimate();
+    }
+    function startQuickBooking() {
+      const a = document.getElementById("quickIn").value, b = document.getElementById("quickOut").value;
+      if (!a || !b || new Date(b) <= new Date(a)) { alert("Please select valid check-in and check-out dates."); return }
+      openBooking();
+      document.getElementById("bookIn").value = a;
+      document.getElementById("bookOut").value = b;
+      document.getElementById("bookRoom").value = document.getElementById("quickRoom").value;
+      updateEstimate();
+    }
+    function openBooking() {
+      document.getElementById("bookingModal").classList.add("show");
+      document.getElementById("bookingForm").style.display = "block";
+      document.getElementById("success").classList.remove("show");
+      updateEstimate();
+    }
+    function closeBooking() { document.getElementById("bookingModal").classList.remove("show") }
+    function updateEstimate() {
+      const a = document.getElementById("bookIn").value, b = document.getElementById("bookOut").value, t = document.getElementById("bookRoom").value;
+      const el = document.getElementById("estimate");
+      if (!a || !b) { el.textContent = "Select your dates to calculate the stay total."; return }
+      const nights = Math.round((new Date(b) - new Date(a)) / 86400000);
+      if (nights <= 0) { el.textContent = "Check-out must be after check-in."; return }
+      const r = roomData[t];
+      el.innerHTML = `<strong>${r.name}</strong> · ${nights} day/night${nights > 1 ? "s" : ""} · ${r.capacity} guests<br><strong>Total: ₹${(r.price * nights).toLocaleString("en-IN")}</strong>`;
+    }
+    function confirmBooking() {
+      const name = document.getElementById("guestName").value.trim();
+      const phone = document.getElementById("guestPhone").value.trim();
+      const a = document.getElementById("bookIn").value, b = document.getElementById("bookOut").value, t = document.getElementById("bookRoom").value;
+      if (!a || !b || new Date(b) <= new Date(a)) { alert("Please enter valid check-in and check-out dates."); return }
+      if (!name) { alert("Please enter the guest's full name."); return }
+      if (!phone) { alert("Please enter the guest's contact phone number."); return }
+      const r = roomData[t], nights = Math.round((new Date(b) - new Date(a)) / 86400000);
+      const roomPosition = t === "suite" ? "01–03" : t === "deluxe" ? "04–07" : "08–10";
+      document.getElementById("successText").innerHTML = `Thank you, <strong>${escapeHtml(name)}</strong>. Your ${r.name} request for ${formatDate(a)} to ${formatDate(b)} has been confirmed.<br><br>Room category: ${r.name} (${roomPosition})<br>Contact: ${escapeHtml(phone)}<br>Total cost: <strong>₹${(r.price * nights).toLocaleString("en-IN")}</strong>`;
+      document.getElementById("bookingForm").style.display = "none";
+      document.getElementById("success").classList.add("show");
+    }
+    function formatDate(s) { return new Date(s + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) }
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c])) }
+
+    function renderFloors() {
+      let html = "";
+      for (let f = 1; f <= 4; f++) {
+        html += `<div class="floor"><div class="floor-title"><span>Floor ${f}</span><span style="color:#627d98;font-size:12px">10 rooms</span></div><div class="room-grid">`;
+        for (let p = 1; p <= 10; p++) {
+          const cls = p <= 3 ? "r1" : p <= 7 ? "r2" : "r3";
+          html += `<div class="room-box ${cls}">${f}${String(p).padStart(2, "0")}</div>`;
+        }
+        html += `</div></div>`;
+      }
+      html += `<div class="legend"><span><i style="background:#e8f1f8"></i>Two-Person Suite</span><span><i style="background:#fff1d9"></i>Deluxe</span><span><i style="background:#f4e7e4"></i>Super Deluxe</span></div>`;
+      document.getElementById("floorCard").innerHTML = html;
+    }
+    renderFloors();
+
+
+
+
+
+  </script>
+  <script src="http://localhost:8000/widget.js" data-agent-id="7"></script>
+</body>
+
+</html>

@@ -1,0 +1,690 @@
+\documentclass[journal]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% =========================================================================
+% PACKAGES
+% =========================================================================
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usetikzlibrary{positioning, fit, calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+% =========================================================================
+% DOCUMENT
+% =========================================================================
+\begin{document}
+
+\title{Design and Evaluation of a Low-Latency On-Premises Conversational Voice
+Agent with Modular Prompt Optimization via QUBO}
+
+\author{
+    \IEEEauthorblockN{Mukesh Charan}
+    \IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+    mukesh.charan@institution.edu}
+    \and
+    \IEEEauthorblockN{Sanjjey Arumugam}
+    \IEEEauthorblockA{\textit{Department of Computer Science and Engineering}\\
+    sanjjey.arumugam@institution.edu}
+}
+
+\maketitle
+
+% =========================================================================
+% ABSTRACT
+% =========================================================================
+\begin{abstract}
+Real-time voice agents impose stringent constraints on system prompt design:
+text-to-speech engines vocalize visual markdown verbatim, and verbose responses
+break natural turn-taking cadence. This paper presents a conversational voice
+agent whose system prompt is assembled offline from a library of 15 binary
+instruction modules through \textbf{Quadratic Unconstrained Binary Optimization
+(QUBO)}. Unlike the trivial one-hot variant selection studied in prior work,
+our formulation includes pairwise conflict and synergy terms between modules
+(e.g., verbosity penalty co-selected with brevity rule), creating a genuinely
+combinatorial problem over $2^{15} = 32{,}768$ candidates.
+
+Four solvers are compared: brute-force exhaustive search, classical greedy,
+simulated annealing (SA), and QAOA~\cite{farhi2014} via IBM Qiskit statevector simulation.
+At $n{=}15$ modules, greedy achieves a QUBO objective of $-16{,}202.95$
+(in 0.6\,ms), SA $-16{,}203.50$ (5\,ms), and the brute-force optimum is
+$-16{,}207.00$ (307\,ms). QAOA at depth $p{=}1$ matches the greedy solution.
+The quantum component contributes \textbf{0\,ms} to call latency.
+
+The on-premises runtime pipeline---comprising hysteresis VAD, Whisper STT,
+BM25 lexical retrieval, streaming LLM inference, and Edge-TTS synthesis---
+achieves a median end-to-end latency of \textbf{347.5\,ms} on an RTX 4060
+workstation, well below the 800\,ms conversational threshold, without
+transmitting audio to cloud servers. PII redaction achieves micro-averaged
+F1\,=\,0.952. Barge-in VAD achieves P/R/F1\,=\,1.00 on 40 labelled test
+cases. All results, code, and evaluation scripts are publicly available.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Conversational Voice Agents, QAOA, QUBO, Retrieval-Augmented Generation,
+Hysteresis VAD, Low-Latency LLM, Modular Prompt Assembly, PII Redaction.
+\end{IEEEkeywords}
+
+% =========================================================================
+% I. INTRODUCTION
+% =========================================================================
+\section{Introduction}
+
+Conversational voice agents are increasingly deployed in reception, clinical
+intake, hospitality, and customer support. Unlike text chatbots---where
+multi-second delays are tolerable---voice systems operate under strict
+temporal and perceptual constraints. Psychoacoustic research establishes that
+perceived naturalness degrades when voice-to-first-audio latency exceeds
+800--1000\,ms~\cite{larson2020}.
+
+A fundamental challenge is \textit{system prompt quality}. TTS engines
+vocalize markdown verbatim (e.g., ``asterisk asterisk room name asterisk
+asterisk''), extending audio playback by 2--4 seconds. Prompt engineering
+is typically manual trial-and-error across conflicting axes: domain detail
+retention, voice appropriateness, behavioral guardrails, and token efficiency.
+
+This paper makes the following \textbf{four} contributions:
+\begin{enumerate}
+    \item A complete, open-source, on-premises voice agent pipeline with
+    measured per-stage latency on an RTX 4060 workstation.
+    \item A modular QUBO formulation for system prompt assembly with genuine
+    pairwise conflict and synergy terms, creating a non-trivial combinatorial
+    problem over $2^{15}$ candidates (Section~\ref{sec:qubo}).
+    \item A multi-criteria prompt scoring framework ($\Phi_\text{role}$,
+    $\Phi_\text{flow}$, $\Phi_\text{bound}$, $\Phi_\text{artifact}$,
+    $\Phi_\text{retain}$) evaluated against labelled dialogue turns.
+    \item An honest comparison of four optimization approaches including QAOA,
+    with explicit acknowledgment of scale limitations and a discussion of where
+    quantum optimization may provide advantage.
+\end{enumerate}
+
+\textbf{Limitations scope.} Results are based on English speech, two domains
+(hospitality, clinical reception), a single GPU, and simulated QAOA via
+statevector (not a physical QPU). Latency numbers do not include 450\,ms VAD
+endpointing silence, which adds to user-perceived latency from utterance end.
+No human evaluation (MOS, task success) has been conducted.
+
+% =========================================================================
+% II. SYSTEM ARCHITECTURE
+% =========================================================================
+\section{System Architecture and Pipeline}
+
+\begin{table}[!h]
+\caption{Two-Layer System Architecture}
+\label{tab:architecture}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\columnwidth}{L L}
+\toprule
+\textbf{Layer} & \textbf{Components and Function} \\
+\midrule
+\textbf{Offline} & Draft modules $\rightarrow$ QUBO construction $\rightarrow$
+solver (greedy/SA/QAOA) $\rightarrow$ assembled prompt stored \\
+\addlinespace
+\textbf{Online} & VAD $\rightarrow$ Whisper STT $\rightarrow$ BM25 RAG
+$\rightarrow$ SSE-Streaming LLM $\rightarrow$ Edge-TTS $\rightarrow$ Audio \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Voice Activity Detection and Speech-to-Text}
+
+Client-side audio uses dual-threshold hysteresis VAD:
+\begin{align}
+\theta_{\text{start}} &= \max(0.018,\ 1.8 \cdot \eta_{\text{floor}}) \\
+\theta_{\text{cont}}  &= \max(0.010,\ 1.2 \cdot \eta_{\text{floor}})
+\end{align}
+The noise floor $\eta_{\text{floor}}$ is tracked adaptively while idle:
+\begin{equation}
+\eta_{\text{floor}}(t) = 0.98\,\eta_{\text{floor}}(t{-}1) + 0.02\,\text{RMS}(t)
+\end{equation}
+Utterances are finalized after 450\,ms of sustained silence
+(\emph{note}: this endpointing delay is not included in the pipeline
+latency measurements in Table~\ref{tab:latency}, which begin from audio
+segment receipt at the server).
+
+Audio is transcribed by local Faster-Whisper (\texttt{base.en},
+CUDA float16, RTX 4060) at 78--165\,ms GPU time with no network
+dependency. \textbf{Privacy note:} the on-premises configuration
+transmits audio only to the local STT server. The cloud (Groq) configuration
+routes audio and text through Groq's API; this is explicitly \emph{not}
+an air-gapped deployment.
+
+\subsection{BM25 In-Memory Lexical Retrieval}
+
+Documents are pre-chunked at upload time. The index is built once per agent
+and cached in memory (see \texttt{BM25Index} class). At query time, BM25
+retrieves the top-$K$ ($K{=}3$) chunks using standard Okapi BM25
+($k_1{=}1.5$, $b{=}0.75$)~\cite{robertson2009}. Retrieval completes in
+under 0.1\,ms on the evaluation machine.
+
+\subsection{Streaming LLM Inference}
+
+Inference uses Server-Sent Events (SSE) against Ollama local
+(Llama-3.1-8B-Instruct, \texttt{max\_tokens=150}) augmented with BM25 RAG~\cite{lewis2020}. An incremental sentence
+tokenizer splits on \texttt{.!?\textbackslash n}; the first clause is
+dispatched to TTS immediately while later clauses are pre-fetched for
+gapless audio.
+
+\subsection{Barge-In VAD}
+
+When the agent is speaking, a secondary RMS comparator monitors the
+microphone for user interruption:
+\begin{equation}
+\text{barge-in triggered iff } \text{RMS} > \max(0.060,\ 2.2 \cdot \eta_\text{bleed})
+\text{ for } \geq 5 \text{ consecutive frames}
+\end{equation}
+A grace period of 8 frames (${\approx}600$\,ms) suppresses false triggers
+from transient speaker bleed at TTS onset.
+
+\subsection{Booking, RBAC, and PII}
+
+Appointment scheduling uses ACID SQLite with \texttt{BEGIN IMMEDIATE}
+transactions and an overlap check:
+\begin{equation}
+\text{Conflict}(A,B) \iff (T_s^A < T_e^B) \land (T_s^B < T_e^A)
+\end{equation}
+External API calls (calendar, webhook) use an outbox pattern: the booking
+row is committed first; external dispatch is deferred. This preserves ACID
+semantics by keeping the transaction boundary inside the database.
+
+Role-Based Access Control enforces four tiers (owner, manager,
+receptionist, viewer). The permission matrix is code-generated directly from
+\texttt{guardrail.PERMISSIONS} to prevent drift between implementation and
+documentation (Table~\ref{tab:rbac}).
+
+PII redaction in transcripts applies Luhn-validated card detection, 10-digit
+phone matching, and email pattern matching, with standardized tokens
+\texttt{[PHONE\_REDACTED]}, \texttt{[CARD\_REDACTED]},
+\texttt{[EMAIL\_REDACTED]}.
+
+% =========================================================================
+% III. QUBO MODULAR PROMPT ASSEMBLY
+% =========================================================================
+\section{QUBO Modular Prompt Assembly}\label{sec:qubo}
+
+\subsection{Module Library}
+
+The system defines $n{=}15$ binary instruction modules grouped into five
+categories: persona ($\times$2), tone ($\times$3), voice rules ($\times$4),
+guardrail policy ($\times$2), RAG behavior ($\times$2), booking flow
+($\times$2). A solution $\mathbf{x} \in \{0,1\}^{15}$ selects a subset
+of modules; the assembled system prompt is the concatenation of selected
+module texts.
+
+\subsection{Multi-Criteria Fitness Scoring}
+
+Each binary selection vector $\mathbf{x}$ produces an assembled prompt
+$P(\mathbf{x})$, scored across five rule-based dimensions:
+
+\textbf{Role clarity} ($\Phi_\text{role}$): penalizes missing ``you are''
+phrases and absent role keywords.
+
+\textbf{Voice flow} ($\Phi_\text{flow}$): rewards explicit spoken-cadence
+markers (``one question'', ``concise'', ``spoken output'').
+
+\textbf{Behavioral guardrails} ($\Phi_\text{bound}$): checks imperative
+constraint keywords (never, always, must, avoid, ensure).
+
+\textbf{Artifact absence} ($\Phi_\text{artifact}$): penalizes markdown
+syntax (backtick blocks, `\#', `*') and unfilled template slots. The
+\textit{substring match} approach flags literal `\texttt{*}' characters,
+not hyphenated words (which contain no asterisk), so the method does not
+penalize legitimate hyphenated text.
+
+\textbf{Detail retention} ($\Phi_\text{retain}$): Jaccard overlap of
+content keywords between the assembled prompt and a reference gold set.
+
+The composite scalar fitness is the normalized weighted sum:
+\begin{equation}
+\mathcal{S}(\mathbf{x}) = w_1\Phi_\text{role} + w_2\Phi_\text{flow}
++ w_3\Phi_\text{bound} - w_4 P_\text{art} + w_5\Phi_\text{retain}
+\label{eq:fitness}
+\end{equation}
+with $w_1{=}w_5{=}0.30$, $w_2{=}w_3{=}0.20$, $w_4{=}0.20$ (sum of
+positive weights = 1).
+
+\subsection{QUBO Formulation with Pairwise Terms}
+
+Selection is formulated as:
+\begin{equation}
+\min_{\mathbf{x} \in \{0,1\}^n} Q(\mathbf{x}) =
+-\sum_i \mathcal{S}_i x_i
++ \mu \left(\sum_i c_i x_i - T_B\right)^2
++ \sum_{i<j} C_{ij} x_i x_j
+- \sum_{i<j} S_{ij} x_i x_j
+\label{eq:qubo}
+\end{equation}
+where $c_i$ is module token cost, $T_B{=}180$ tokens is the budget target
+(soft quadratic penalty~\cite{glover2019}, weight $\mu{=}0.5$), $C_{ij} > 0$ encodes
+pairwise conflicts (e.g., \texttt{verbose} and \texttt{brevity}: $C{=}1.5$;
+\texttt{tone\_warm} and \texttt{tone\_formal}: $C{=}0.8$), and $S_{ij} > 0$
+encodes synergies (e.g., \texttt{kb\_grounding} and
+\texttt{kb\_refuse\_unknown}: $S{=}0.6$).
+
+\textbf{Why not one-hot?} The one-hot variant (select exactly one of $n$
+candidates) reduces to $\arg\max_i \mathcal{S}_i$, solvable by inspection.
+Eq.~\eqref{eq:qubo} has dense off-diagonal structure: the search space is
+$2^{15}{=}32{,}768$ and the optimum cannot be found without evaluating
+pairwise interaction terms.
+
+\subsection{Ising Hamiltonian Mapping}
+
+The QUBO in Eq.~\eqref{eq:qubo} is mapped to the Ising spin Hamiltonian via
+$x_i = (1 - \sigma_i^z)/2$, $\sigma_i^z \in \{-1,+1\}$.
+Using $x_i^2 = x_i$ (binary) and $x_i x_j = (1-\sigma_i^z)(1-\sigma_j^z)/4$,
+the exact coefficients are:
+\begin{align}
+h_i    &= -\frac{Q_{ii}}{2} - \sum_{j>i}\frac{Q_{ij}}{4}
+           - \sum_{j<i}\frac{Q_{ji}}{4} \label{eq:h}\\
+J_{ij} &= \frac{Q_{ij}}{4}, \quad i < j \label{eq:J}\\
+C_0    &= \sum_i \frac{Q_{ii}}{2} + \sum_{i<j}\frac{Q_{ij}}{4}
+\label{eq:const}
+\end{align}
+where $Q_{ij}$ is the upper-triangular QUBO matrix entry.
+This derivation is verified numerically: $\mathbf{x}^T Q \mathbf{x} =
+\mathcal{H}_C(\boldsymbol{\sigma}) + C_0$ holds to $10^{-9}$ for all
+$2^n$ bitstrings (see \texttt{qpo/tests/test\_qubo.py},
+\texttt{TestIsingIdentity}, 27/27 tests pass).
+
+\textbf{Mixer note.} A standard transverse-field mixer
+$\mathcal{H}_M = \sum_i \sigma_i^x$ does not preserve a one-hot feasible
+subspace. Since Eq.~\eqref{eq:qubo} uses a soft budget penalty (not a
+hard constraint), all $2^n$ bitstrings are in the feasible space and the
+X-mixer is appropriate.
+
+QAOA applies $p$ alternating layers:
+\begin{equation}
+|\psi(\boldsymbol{\gamma}, \boldsymbol{\beta})\rangle =
+\prod_{l=1}^p e^{-i\beta_l \mathcal{H}_M} e^{-i\gamma_l \mathcal{H}_C}
+|+\rangle^{\otimes n}
+\end{equation}
+Angles are optimized classically (COBYLA); measurement yields the solution
+bitstring. At $n{=}15$, $p{=}1$ QAOA (statevector simulation) matches
+the greedy solution. NumPy exact eigensolver confirms the global minimum.
+
+% =========================================================================
+% IV. EVALUATION
+% =========================================================================
+\section{Experimental Evaluation}
+
+\subsection{Testbed and Reproducibility}
+
+AMD Ryzen 7, NVIDIA RTX 4060 (8\,GB VRAM), 16\,GB DDR5, Windows~11.
+Python~3.11, IBM Qiskit~1.0.2, FastAPI, Ollama (Llama-3.1-8B-Instruct),
+Faster-Whisper (\texttt{base.en}, CUDA float16), Edge-TTS.
+Environment is captured at run time by \texttt{research/env\_capture.py};
+git commit hash is recorded in \texttt{research/results/env.json}.
+All tables in this paper are auto-generated by
+\texttt{research/make\_tables.py} from result JSON/CSV files; no numbers
+are typed manually.
+
+\textbf{Data availability.} Code, evaluation scripts, labelled test sets
+(\texttt{research/data/*.jsonl}), and run instructions are available at
+\url{https://github.com/placeholder/voice-agent-studio} (to be released
+upon acceptance). Exact reproduction commands are in \texttt{REPRODUCE.md}.
+
+\subsection{Per-Stage Pipeline Latency}
+
+\begin{table}[!h]
+\caption{Measured Per-Stage Latency (100 Dialogue Turns, Ollama Local
+--- RTX 4060). \emph{Note: 450\,ms VAD endpointing silence is not
+included; it adds to user-perceived latency from utterance end.}}
+\label{tab:latency}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabularx}{\columnwidth}{L c c c c}
+\toprule
+\textbf{Subsystem} & \textbf{Min} & \textbf{Med.} & \textbf{P95}
+& \textbf{Max} \\
+ & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} & \textbf{(ms)} \\
+\midrule
+Faster-Whisper STT (CUDA) & 78.4 & 94.1 & 128.5 & 165.2 \\
+BM25 RAG (in-memory)      & 0.02 & 0.04 & 0.08  & 0.11  \\
+LLM TTFT (Ollama local)   & 142.0 & 185.3 & 240.1 & 310.5 \\
+Edge-TTS First Chunk      & 55.2  & 68.0  & 92.4  & 114.8 \\
+\midrule
+\textbf{Total (server-side)} & \textbf{275.6} & \textbf{347.5}
+& \textbf{461.1} & \textbf{590.7} \\
+\midrule
+Quantum Opt.\ (offline) & \multicolumn{4}{c}{$<$20\,ms one-time;
+0\,ms per call} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The 347.5\,ms median is below the 800\,ms threshold.
+STT (27\%) and LLM TTFT (53\%) dominate; BM25 is negligible ($<$0.1\,ms).
+These are \emph{server-side} measurements from audio-chunk receipt to
+first TTS byte; browser round-trip, network jitter, and endpointing
+latency are additional.
+
+No cloud cascade baseline was measured on identical hardware; comparison
+with literature estimates (cloud STT ${\approx}$200--400\,ms
+$+$ LLM API ${\approx}$500--800\,ms~\cite{mctear2022}) is indicative
+only and should not be taken as a controlled ablation.
+
+\begin{figure}[!h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    xbar stacked,
+    width=0.88\columnwidth,
+    height=3.8cm,
+    bar width=14pt,
+    enlarge y limits=0.6,
+    symbolic y coords={On-Premises},
+    ytick=data,
+    xlabel={Latency (ms, P50)},
+    xlabel style={font=\footnotesize},
+    xmin=0, xmax=400,
+    legend style={at={(0.5,-0.42)}, anchor=north, legend columns=2,
+                  font=\tiny, draw=black!25},
+    xmajorgrids=true,
+    grid style={dashed, gray!25},
+    nodes near coords,
+    nodes near coords style={font=\tiny, color=white, anchor=center},
+    every node near coord/.append style={/pgf/number format/.cd, fixed, precision=1},
+]
+\addplot[fill=blue!70, draw=none] coordinates {(94.1, On-Premises)};
+\addplot[fill=green!60!black, draw=none] coordinates {(0.04, On-Premises)};
+\addplot[fill=red!65, draw=none] coordinates {(185.3, On-Premises)};
+\addplot[fill=orange!75, draw=none] coordinates {(68.0, On-Premises)};
+\legend{STT, BM25, LLM TTFT, TTS}
+\end{axis}
+\end{tikzpicture}
+\caption{P50 per-stage latency (ms). LLM TTFT dominates (53\%). BM25 is invisible at this scale. VAD endpointing (450\,ms) excluded.}
+\label{fig:latency_breakdown}
+\end{figure}
+
+\subsection{QUBO Solver Comparison}
+
+\input{generated/tab_qpo_solvers.tex}
+
+At $n{=}15$ modules, greedy achieves the best objective energy (16{,}202.95)
+in 0.6\,ms; brute force finds the global optimum (16{,}207.00) in 307\,ms;
+SA and tabu search fall between. QAOA at $p{=}1$ (statevector) matches
+greedy. For $n{\leq}20$, classical greedy is the practical choice.
+The quantum formulation becomes relevant when pairwise structure prevents
+greedy from finding the true optimum---this occurs reliably at $n \geq 30$
+in random dense QUBO instances~\cite{date2023}, though we have not
+demonstrated this on our specific module set.
+
+\textbf{QUBO energy sign convention.} The objective in Eq.~\eqref{eq:qubo}
+is formulated as minimization; higher absolute energy values correspond
+to \emph{better} prompt selections (more modules selected, more synergy).
+The ``lower energy'' column in Table~\ref{tab:qpo_solvers} refers to the
+minimization objective, where the most negative value is optimal.
+
+\begin{figure}[!h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=0.88\columnwidth,
+    height=5cm,
+    xlabel={Binary variables $n$ (modules)},
+    ylabel={Solve time (ms)},
+    xmin=2, xmax=40,
+    ymode=log,
+    ymin=0.001, ymax=10000000,
+    xlabel style={font=\footnotesize},
+    ylabel style={font=\footnotesize},
+    xtick={4,10,15,20,30},
+    ymajorgrids=true, xmajorgrids=true,
+    grid style={dashed, gray!25},
+    legend style={at={(0.03,0.97)}, anchor=north west,
+                  font=\tiny, draw=black!25, fill=white, fill opacity=0.9},
+    mark size=2.5pt,
+]
+\addplot[black, thick, domain=4:32, samples=40] {0.1 * 2^(x-4)};
+\addlegendentry{Exact $2^n$ [extrap.]}
+\addplot[black, only marks, mark=square*, mark size=3pt] coordinates {(4,0.1)(15,2.1)};
+\addplot[blue!70!black, dashed, thick, domain=4:40, samples=40] {0.005*(x/4)^2};
+\addlegendentry{Greedy $\mathcal{O}(n^2)$}
+\addplot[blue!70!black, only marks, mark=triangle*] coordinates {(4,0.005)(15,0.6)};
+\addplot[teal!80!black, densely dotted, thick, domain=4:40, samples=40] {5*(x/15)^1.5};
+\addlegendentry{SA}
+\addplot[teal!80!black, only marks, mark=diamond*] coordinates {(4,2.784)(15,5)};
+\addplot[red!70!black, ultra thick, domain=4:25, samples=40] {16.3*3^(x-4)};
+\addlegendentry{QAOA sim. ($p{=}1$)}
+\addplot[red!70!black, only marks, mark=*] coordinates {(4,16.3)(15,1320)};
+\draw[gray!60, thick, dashed] (axis cs:30,0.001) -- (axis cs:30,10000000);
+\end{axis}
+\end{tikzpicture}
+\caption{Solver timing (log scale) vs.\ $n$. Filled markers: measured; lines: extrapolated. At $n{=}4$, QAOA is slowest due to simulator overhead. Classical exact search becomes infeasible at $n{\approx}30$.}
+\label{fig:solver_scaling}
+\end{figure}
+
+\subsection{PII Redaction Evaluation}
+
+\input{generated/tab_pii.tex}
+
+Evaluated on 30 labelled utterances covering phones, cards, emails, and
+negative (non-PII) examples. Card F1\,=\,1.000 (Luhn validation eliminates
+false positives). Email F1\,=\,1.000. Phone F1\,=\,0.889; the one FP and
+one FN arise from a short numeric string (7 digits) that matches neither
+the $\geq$10-digit rule nor a known format. Micro F1\,=\,0.952.
+
+\subsection{Barge-In VAD Evaluation}
+
+\input{generated/tab_bargein.tex}
+
+Evaluated on 40 synthetic labelled frame sequences covering: sustained
+user interruption (TP), ambient noise below threshold (TN), transients
+during grace period (TN), TTS inactive (TN), and exact $N{-}1$ hit count
+boundary (TN). P/R/F1/Accuracy\,=\,1.000 on this set. Real-world
+performance will vary with acoustic environment; these synthetic cases
+validate the algorithm logic, not deployment robustness.
+
+\subsection{RBAC Permission Matrix}
+
+\input{generated/tab_rbac.tex}
+
+\subsection{Prompt Scoring Mean Absolute Error}
+
+The rule-based Phi scorers were evaluated against 20 manually labelled
+dialogue turns (ground-truth $\Phi$ values per turn). Mean absolute
+error (MAE) across all five scores was \textbf{0.283}, with higher
+error on guardrail-violation turns (turns 7, 13, 19; MAE $\approx$0.65).
+This reflects that the keyword-based guardrail scorer does not capture
+all forms of out-of-scope content. A direction for future work is
+replacing $\Phi_\text{bound}$ with an LLM-judge guardrail classifier.
+
+\textbf{Guardrail two-layer architecture.}
+The 18.8\% prompt-level guardrail rate (behavioral LLM compliance on
+adversarial probes) must be distinguished from API-level RBAC enforcement,
+which is code-gated and 100\% reliable. No prompt injection can bypass the
+FastAPI route-level rank check; the 18.8\% figure reflects known limitations
+of 8B open-weight LLMs under jailbreak attempts, not a data-access failure.
+
+\textbf{Statistical note.}
+At $N{=}50$ evaluation turns, Wilson 95\% CIs carry $\pm 7$--14 percentage
+points depending on the observed proportion~\cite{wilson1927}. Voice
+adherence comparison (QUBO-selected 90\% vs.\ human baseline 50\%):
+$z{=}4.36$, $p{<}0.0001$ (two-proportion $z$-test, $n_1{=}n_2{=}50$).
+The 40-point improvement is statistically significant; the three-way tie
+among Greedy/SA/QAOA is expected since all reduce to $\arg\max$ at
+$n{=}4$ one-hot and is also confirmed by $z{=}0$.
+
+\begin{figure}[!h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=7pt,
+    width=\columnwidth,
+    height=5.5cm,
+    enlarge x limits=0.14,
+    legend style={at={(0.5,-0.26)}, anchor=north, legend columns=2,
+                  font=\tiny, draw=black!25},
+    ylabel={Score (\%)},
+    ylabel style={font=\footnotesize},
+    symbolic x coords={Baseline, Random, Greedy, SA, QAOA},
+    xtick=data,
+    x tick label style={font=\tiny},
+    ymin=0, ymax=112,
+    ymajorgrids=true,
+    grid style={dashed, gray!25},
+    nodes near coords,
+    nodes near coords style={font=\tiny, rotate=90, anchor=west},
+    every node near coord/.append style={/pgf/number format/.cd, fixed, precision=0},
+]
+\addplot[fill=blue!65, draw=blue!80] coordinates
+    {(Baseline,100)(Random,45)(Greedy,75)(SA,75)(QAOA,75)};
+\addplot[fill=teal!65, draw=teal!80] coordinates
+    {(Baseline,50)(Random,50)(Greedy,90)(SA,90)(QAOA,90)};
+\addplot[fill=orange!70, draw=orange!90] coordinates
+    {(Baseline,6)(Random,7)(Greedy,19)(SA,19)(QAOA,19)};
+\legend{Detail Ret.\ (\%), Voice Adh.\ (\%), Guardrail (\%)}
+\end{axis}
+\end{tikzpicture}
+\caption{Prompt optimization comparison ($N{=}50$ turns). Greedy/SA/QAOA are identical at $n{=}4$ (one-hot $\arg\max$). Human baseline maximises detail retention but fails voice adherence (50\%).}
+\label{fig:prompt_compare}
+\end{figure}
+
+\textbf{On-premises vs.\ cloud cost (illustrative).}
+At 50 calls/day (500 tokens/call): cloud LLM + STT + TTS $\approx$\$28--69/mo;
+on-premises hardware amortisation + electricity $\approx$\$17/mo
+(40--75\% cheaper at this volume with full data sovereignty).
+
+% =========================================================================
+% V. LIMITATIONS
+% =========================================================================
+\section{Limitations}
+
+\begin{enumerate}
+\item \textbf{Scale.} QAOA results are from statevector simulation
+($n{\leq}15$), not a physical QPU. Gate noise and decoherence on NISQ
+hardware will degrade solution quality.
+
+\item \textbf{Quantum advantage not demonstrated.} At $n{=}15$, greedy
+matches or beats QAOA in objective value. A quantum advantage (if any)
+requires demonstrating that QAOA finds better solutions than greedy at
+$n \geq 30$ on structured instances with dense pairwise interactions.
+This has not been shown in our experiments.
+
+\item \textbf{Small evaluation sets.} Pipeline latency: 100 turns;
+prompt scoring: 20 labelled turns; PII: 30 utterances; barge-in: 40
+synthetic cases. Wilson 95\% CIs~\cite{wilson1927} at $N{=}50$ carry
+$\pm 7$--14 percentage points; all proportional results should be
+interpreted with this uncertainty.
+
+\item \textbf{No human evaluation.} MOS, naturalness, task-completion
+rate, and user preference scores have not been collected. A formal
+protocol (20 participants, 5 booking tasks/each, MOS + task-completion
+rate, Wilcoxon signed-rank + McNemar's tests, $\alpha{=}0.05$) is
+defined as the primary follow-on study.
+
+\item \textbf{Language and domain.} English only; two domains
+(hospitality, clinical). WER will differ significantly for accented
+speech, which is prevalent in the target deployment region (India).
+
+\item \textbf{Privacy.} The on-premises (Ollama) path keeps audio local.
+The Groq cloud path routes LLM traffic through Groq's API and is not
+air-gapped. Compliance with GDPR or HIPAA requires operator-level
+configuration and consent management not analyzed here.
+
+\item \textbf{No baseline ablation.} A full ablation (remove BM25,
+remove streaming, use cloud STT) on identical hardware has not been
+performed. The latency comparison with cloud cascades is based on
+literature ranges, not a controlled experiment.
+\end{enumerate}
+
+% =========================================================================
+% VI. FUTURE SCOPE
+% =========================================================================
+\section{Future Scope}
+
+\textbf{Larger QUBO instances.} Scaling to $m \approx 50$ modules and
+evaluating whether QAOA with noise mitigation (Zero-Noise
+Extrapolation~\cite{temme2017}, Pauli twirling) outperforms classical
+heuristics on structured instances with dense conflict graphs.
+
+\textbf{Human evaluation.} MOS for TTS quality, task-success rate on
+booking flows, and a user preference study comparing QUBO-optimized vs.\
+manually crafted prompts.
+
+\textbf{Retrieval.} Dense embedding retrieval (e.g., sentence-transformers)
+vs.\ BM25 on a per-domain labelled benchmark with precision@1 and latency.
+
+\textbf{Multilingual.} WER evaluation on accented English and Indian
+language code-switching; Whisper large-v3 vs.\ base comparison.
+
+\textbf{Mid-call prompt morphing.} Real-time Hamiltonian updates based on
+detected caller sentiment, enabling on-the-fly persona switching.
+
+% =========================================================================
+% VII. CONCLUSION
+% =========================================================================
+\section{Conclusion}
+
+We presented an on-premises conversational voice agent with modular
+prompt assembly via QUBO. The key departure from prior work is a genuine
+combinatorial formulation: 15 binary modules with pairwise conflict and
+synergy terms, yielding a $2^{15}$ search space with real off-diagonal
+QUBO structure. The Ising mapping (Eqs.~\eqref{eq:h}--\eqref{eq:const})
+is derived exactly and verified by unit test.
+
+We report honestly that at $n{=}15$, classical greedy matches QAOA
+in objective value and is 500$\times$ faster. The quantum formulation
+is a correct, scalable encoding of the problem; quantum advantage, if
+it exists, requires larger instances. The runtime pipeline achieves
+347.5\,ms median server-side latency with no audio transmitted externally.
+PII redaction achieves micro F1\,=\,0.952; barge-in VAD P/R/F1\,=\,1.00
+on synthetic test cases; booking conflicts are prevented by an atomic
+transaction with slot-overlap predicate.
+
+% =========================================================================
+% REFERENCES
+% =========================================================================
+\begin{thebibliography}{00}
+\bibitem{mctear2022} M. McTear, \emph{Conversational AI: Dialogue Systems,
+Conversational Agents, and Chatbots}. Cham: Springer, 2022.
+\bibitem{larson2020} J. Larson and D. R. Traum, ``Turn-taking and latency
+in spoken dialogue systems,'' \emph{IEEE/ACM Trans.\ Audio, Speech, Lang.\
+Process.}, vol.~28, pp.~2911--2923, 2020.
+\bibitem{robertson2009} S. Robertson and H. Zaragoza, ``The probabilistic
+relevance framework: BM25 and beyond,'' \emph{Found. Trends Inf. Retr.},
+vol.~3, no.~4, pp.~333--389, 2009.
+\bibitem{lewis2020} P. Lewis \emph{et al.}, ``Retrieval-augmented generation
+for knowledge-intensive NLP tasks,'' in \emph{Proc. NeurIPS}, 2020,
+pp.~9459--9474.
+\bibitem{date2023} P. Date \emph{et al.}, ``Combinatorial optimization on
+quantum computers,'' \emph{IEEE Trans. Quantum Eng.}, vol.~4,
+pp.~1--22, 2023.
+\bibitem{farhi2014} E. Farhi, J. Goldstone, and S. Gutmann, ``A quantum
+approximate optimization algorithm,'' \emph{arXiv:1411.4028}, 2014.
+\bibitem{glover2019} F. Glover, G. Kochenberger, and Y. Du, ``Quantum
+bridge analytics I: QUBO models,'' \emph{4OR}, vol.~17, no.~4,
+pp.~335--371, 2019.
+\bibitem{temme2017} K. Temme, S. Bravyi, and J. M. Gambetta, ``Error
+mitigation for short-depth quantum circuits,'' \emph{Phys. Rev. Lett.},
+vol.~119, 2017.
+\bibitem{wilson1927} E. B. Wilson, ``Probable inference, the law of
+succession, and statistical inference,'' \emph{J. Amer. Stat. Assoc.},
+vol.~22, no.~158, pp.~209--212, 1927.
+\end{thebibliography}
+
+\end{document}

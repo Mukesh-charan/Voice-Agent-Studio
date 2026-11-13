@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-row">
+        <div>
+          <h1>🎙️ Voice Agent Studio</h1>
+          <p class="sub">Build, save, and call AI voice agents — your knowledge base, bookings, and history.</p>
+        </div>
+        <div id="userBox" class="user-box hidden">
+          <span id="userEmail"></span>
+          <button id="logoutBtn" class="small">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ============ AUTH ============ -->
+    <section id="authScreen" class="hidden">
+      <div class="card auth-card">
+        <h2 id="authTitle">Log in</h2>
+        <p id="authErr" class="auth-err"></p>
+        <label>Email <input id="authEmail" type="email" autocomplete="username" /></label>
+        <label>Password <input id="authPassword" type="password" autocomplete="current-password" /></label>
+        <button id="authSubmit" class="primary">Log in</button>
+        <p class="hint">
+          <span id="authSwitchText">New here?</span>
+          <a href="#" id="authSwitch">Create an account</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ APP ============ -->
+    <div id="appRoot" class="hidden">
+      <div id="unsupported" class="warn hidden">
+        ⚠️ Calls need <b>Google Chrome</b> or <b>Microsoft Edge</b>. You can still edit agents in any browser.
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="dashboard">
+        <div class="dash-head">
+          <h2>Your agents</h2>
+          <button id="newAgentBtn" class="primary">+ New agent</button>
+        </div>
+        <div id="agentList" class="agent-list"></div>
+      </section>
+
+      <!-- AGENT VIEW -->
+      <section id="agentView" class="hidden">
+        <button id="backBtn" class="link">← All agents</button>
+        <div class="tabs">
+          <button class="tab active" data-tab="setup">Setup</button>
+          <button class="tab" data-tab="knowledge">Knowledge</button>
+          <button class="tab" data-tab="call">Call</button>
+          <button class="tab" data-tab="history">History</button>
+          <button class="tab" data-tab="bookings">Bookings</button>
+          <button class="tab" data-tab="guardrails">🛡️ Guardrails &amp; Roles</button>
+          <button class="tab" data-tab="google">🌐 Google Integrations</button>
+          <button class="tab" data-tab="twilio">📞 Twilio Phone</button>
+          <button class="tab" data-tab="embed">Embed</button>
+          <button class="tab" data-tab="docker">🐳 Docker Appliance</button>
+        </div>
+
+        <!-- Setup -->
+        <div id="tab-setup" class="tab-panel card">
+          <div class="card-head">
+            <h2 id="editorTitle">New agent</h2>
+            <div class="card-actions">
+              <button id="exportDockerQuickBtn" class="small btn-secondary" title="Export as on-premise Docker container appliance">🐳 Export Docker</button>
+              <button id="saveBtn" class="primary">Save</button>
+              <button id="deleteBtn" class="danger">Delete</button>
+            </div>
+          </div>
+          <label>Agent name <input id="name" type="text" /></label>
+          <label>
+            System prompt (personality &amp; job)
+            <button id="optimizePromptBtn" class="small" style="float:right;">✨ Quantum Optimize</button>
+            <textarea id="system" rows="4"></textarea>
+          </label>
+          <label>Opening greeting<input id="greeting" type="text" /></label>
+          <div class="row">
+            <label>Voice <select id="voice"></select></label>
+            <label>Speed <input id="rate" type="range" min="0.7" max="1.4" step="0.1" value="1.0" /></label>
+            <label>Language <select id="lang">
+              <option value="en-US">English (US)</option>
+              <option value="en-GB">English (UK)</option>
+              <option value="en-IN">English (India)</option>
+              <option value="hi-IN">Hindi (India)</option>
+            </select></label>
+          </div>
+          <div class="checks">
+            <label class="check"><input id="use_knowledge" type="checkbox" /> Use knowledge base</label>
+            <label class="check"><input id="tools_enabled" type="checkbox" /> Capture bookings/leads</label>
+            <label class="check"><input id="barge_in" type="checkbox" checked /> Allow barge-in (interrupt while speaking)</label>
+            <label class="check"><input id="twilio_enabled" type="checkbox" /> Enable Twilio telephone calls</label>
+          </div>
+          <label>Twilio phone number for this agent (e.g. +12345678901)
+            <input id="twilio_phone_number" type="text" placeholder="+12345678901" />
+          </label>
+          <label>Booking webhook URL (optional) — POSTs each captured booking as JSON
+            <input id="booking_webhook" type="text" placeholder="https://hooks.zapier.com/… or your endpoint" />
+          </label>
+          <button id="testWebhookBtn" class="small">Send test booking</button>
+          <p id="saveHint" class="hint"></p>
+        </div>
+
+        <!-- Knowledge -->
+        <div id="tab-knowledge" class="tab-panel card hidden">
+          <h2>Knowledge base</h2>
+          <p id="kbHint" class="hint"></p>
+          <div class="kb-row">
+            <input id="docFile" type="file" accept=".txt,.md,.pdf,.docx,.csv,.json" />
+            <button id="uploadFileBtn">Upload file</button>
+          </div>
+          <label style="margin-top:10px;">Or paste text<textarea id="docText" rows="3" placeholder="Paste an FAQ, price list, policy…"></textarea></label>
+          <button id="uploadTextBtn">Add pasted text</button>
+          <div id="docList" class="list"></div>
+        </div>
+
+        <!-- Call -->
+        <div id="tab-call" class="tab-panel card call-card hidden">
+          <div id="status" class="status">Ready</div>
+          <div id="sttBadge" style="font-size:12px; color:var(--muted); margin-bottom:10px;">⚡ STT: <strong>Local Faster-Whisper (CUDA Private Offline)</strong> · 🔊 TTS: <strong>Studio Neural TTS</strong></div>
+          <div style="margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; margin:0; font-weight:600;">🎙️ STT Engine:</label>
+            <select id="sttEngineSelect" style="padding:4px 8px; font-size:12px; border-radius:6px; background:var(--card); color:inherit; border:1px solid var(--border);">
+              <option value="local" selected>⚡ Local Faster-Whisper (CUDA Offline / Zero Echo)</option>
+              <option value="browser">🌐 Web Speech API (Chrome Cloud)</option>
+            </select>
+          </div>
+          <button id="callBtn">📞 Start call</button>
+          <p class="hint">Save the agent first so knowledge base &amp; bookings are active.</p>
+          <div id="transcript" class="transcript"></div>
+        </div>
+
+        <!-- History -->
+        <div id="tab-history" class="tab-panel card hidden">
+          <h2>Call history</h2>
+          <p id="histHint" class="hint"></p>
+          <div id="callList" class="list"></div>
+          <div id="callDetail" class="transcript"></div>
+        </div>
+
+        <!-- Bookings -->
+        <div id="tab-bookings" class="tab-panel card hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>Captured bookings &amp; leads</h2>
+          </div>
+          <p id="bookHint" class="hint"></p>
+          <div id="bookingList" class="list"></div>
+        </div>
+
+        <!-- Guardrails & Roles (RBAC) -->
+        <div id="tab-guardrails" class="tab-panel card hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>🛡️ Guardrails &amp; Access Control (RBAC)</h2>
+            <div id="myRoleBadge" class="role-badge">Role: Owner</div>
+          </div>
+          <p id="guardrailHint" class="hint"></p>
+
+          <!-- Guardrail Sensitive Data Abstraction Preview -->
+          <div class="guardrail-banner">
+            <div class="guardrail-banner-head">
+              <strong>🔒 Booked Room Privacy &amp; Data Abstraction</strong>
+              <span class="status-pill active">ACTIVE</span>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:6px 0 10px;">
+              Lower-tier roles (Receptionists &amp; Viewers) automatically receive abstracted guest and room information.
+              Owners and Managers can view complete unredacted reservation files.
+            </p>
+            <div class="abstraction-preview-grid">
+              <div class="preview-box">
+                <span class="preview-tag owner">Owner / Manager View</span>
+                <div class="preview-item">👤 Name: <strong id="previewOwnerName">Sarah Connor</strong></div>
+                <div class="preview-item">📱 Phone: <strong id="previewOwnerPhone">+1 (415) 888-9999</strong></div>
+                <div class="preview-item">🏨 Room / Notes: <strong>Suite 402 (VIP Doctor Consultation)</strong></div>
+              </div>
+              <div class="preview-box">
+                <span class="preview-tag receptionist">Receptionist / Viewer View (Abstracted)</span>
+                <div class="preview-item">👤 Name: <strong>S**** C*****</strong> <small class="text-green">✓ Masked</small></div>
+                <div class="preview-item">📱 Phone: <strong>••••-•••-9999</strong> <small class="text-green">✓ Masked</small></div>
+                <div class="preview-item">🏨 Room / Notes: <em style="color:#f5a623;">[Confidential Room Notes — Restricted]</em></div>
+              </div>
+            </div>
+            <div style="margin-top:12px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); padding-top:8px;">
+              🛡️ <strong>In-Call Anti-Exfiltration Shield:</strong> Deterministically blocks conversational attempts by callers to query other guests' rooms or extract database records.
+            </div>
+          </div>
+
+          <!-- RBAC Team Members Management -->
+          <div style="margin-top:20px;">
+            <div class="card-head" style="margin-bottom:10px;">
+              <h3 style="font-size:15px; margin:0;">👥 Agent Access &amp; Member Roles</h3>
+              <span id="memberCountBadge" style="font-size:12px; color:var(--muted);"></span>
+            </div>
+            
+            <div id="addMemberSection" class="add-member-form">
+              <input id="newMemberEmail" type="email" placeholder="colleague@clinic.com or team email" style="flex:2;" />
+              <select id="newMemberRole" style="flex:1;">
+                <option value="manager">Manager (Full Bookings, KB edit)</option>
+                <option value="receptionist" selected>Receptionist (Masked PII, Call)</option>
+                <option value="viewer">Viewer (Read-only)</option>
+              </select>
+              <button id="addMemberBtn" class="primary small" style="white-space:nowrap;">+ Add Member</button>
+            </div>
+
+            <div id="memberList" class="list" style="margin-top:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Google Integrations -->
+        <div id="tab-google" class="tab-panel card hidden">
+          <h2>🌐 Google Suite Integrations</h2>
+          <p id="googleHint" class="hint"></p>
+
+          <!-- Google Calendar & Meet -->
+          <div class="google-card">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📅</span>
+                <strong>Google Calendar &amp; Google Meet</strong>
+              </div>
+              <button id="testGCalBtn" class="small">Test Calendar Connection</button>
+            </div>
+            <label style="margin-top:8px;">Google Calendar ID
+              <input id="google_calendar_id" type="text" placeholder="primary or your-calendar-id@group.calendar.google.com" />
+            </label>
+            <div class="checks">
+              <label class="check">
+                <input id="google_auto_sync_calendar" type="checkbox" /> Automatically add confirmed voice bookings to Google Calendar
+              </label>
+              <label class="check">
+                <input id="google_enable_meet" type="checkbox" /> Automatically generate Google Meet video links for bookings
+              </label>
+            </div>
+          </div>
+
+          <!-- Google Sheets -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📊</span>
+                <strong>Google Sheets Live Logging</strong>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="testGSheetBtn" class="small">Test Sheet Row</button>
+                <button id="syncAllSheetsBtn" class="small">Sync All Bookings</button>
+              </div>
+            </div>
+            <label style="margin-top:8px;">Google Spreadsheet ID or URL
+              <input id="google_sheet_id" type="text" placeholder="Spreadsheet ID or https://docs.google.com/spreadsheets/d/1BxiM.../edit" />
+            </label>
+            <div class="checks">
+              <label class="check">
+                <input id="google_auto_sync_sheets" type="checkbox" /> Automatically append every new booking/lead as a new row in Google Sheets
+              </label>
+            </div>
+          </div>
+
+          <!-- Google Docs Knowledge Import (RAG) -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📄</span>
+                <strong>Google Docs Knowledge Ingestion (RAG)</strong>
+              </div>
+              <button id="importGDocBtn" class="small primary">📥 Import Doc to KB</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:4px 0 8px;">
+              Paste any shared Google Doc URL (FAQs, room price list, clinic handbook). We extract the text, chunk it, and index it into the agent's knowledge base.
+            </p>
+            <input id="google_doc_url" type="text" placeholder="https://docs.google.com/document/d/1BxiMVs0XRA5.../edit" />
+          </div>
+
+          <!-- Google Credentials -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🔑</span>
+                <strong>Google Cloud Credentials (Service Account / OAuth)</strong>
+              </div>
+              <button id="saveGoogleSettingsBtn" class="primary small">💾 Save Google Settings</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin:4px 0 8px;">
+              Paste your Google Service Account JSON or OAuth Token JSON here to enable server-to-server cloud synchronization.
+            </p>
+            <textarea id="google_credentials_json" rows="3" placeholder='{"type": "service_account", "project_id": "...", "private_key": "...", "client_email": "..."}'></textarea>
+            <p id="googleCredStatus" class="hint" style="margin-top:4px;"></p>
+          </div>
+        </div>
+
+        <!-- Twilio Phone Integration -->
+        <div id="tab-twilio" class="tab-panel card hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h2>📞 Twilio Real-Time Voice Telephony</h2>
+            <div id="twilioStatusBadge" class="role-badge" style="background:var(--card); border:1px solid var(--border);">Checking Twilio...</div>
+          </div>
+          <p id="twilioHint" class="hint">Connect real-world telephone calls to your AI agents via Twilio PSTN and bidirectional WebSocket streaming.</p>
+
+          <!-- Outbound Dial Pad Card -->
+          <div class="google-card" style="margin-top:12px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📱</span>
+                <strong>Outbound Telephone Call</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:4px 0 10px;">
+              Trigger an immediate outbound telephone call from this agent to any real cell phone or landline number.
+            </p>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="dialPhoneNumber" type="tel" placeholder="+1 (555) 234-5678" style="flex:1;" />
+              <button id="dialNowBtn" class="primary" style="white-space:nowrap;">📞 Dial Call</button>
+            </div>
+            <div id="dialStatusBox" style="margin-top:10px; font-size:13px; color:var(--muted); padding:8px 12px; background:var(--card); border-radius:6px; display:none;"></div>
+          </div>
+
+          <!-- Inbound Phone Routing & Webhook Card -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🌐</span>
+                <strong>Inbound Call Webhook (Twilio Console Setup)</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:6px 0 8px;">
+              In your <a href="https://console.twilio.com/" target="_blank" style="color:var(--accent);">Twilio Console</a>, open your Phone Number settings and configure the voice webhook:
+            </p>
+            <div style="background:var(--card); padding:10px; border-radius:6px; font-family:monospace; font-size:13px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border);">
+              <span id="twilioWebhookUrlText">https://your-domain.com/api/twilio/voice</span>
+              <button id="copyTwilioWebhookBtn" class="small">Copy URL</button>
+            </div>
+            <p style="font-size:12px; color:var(--muted); margin-top:8px;">
+              HTTP Method: <strong>HTTP POST</strong> · TwiML connects incoming calls to real-time low-latency audio stream.
+            </p>
+          </div>
+
+          <!-- Multi-Agent Phone Routing Table -->
+          <div class="google-card" style="margin-top:16px;">
+            <div class="google-card-header">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">🔀</span>
+                <strong>Dedicated Phone Number Routing</strong>
+              </div>
+            </div>
+            <p style="font-size:13px; color:var(--muted); margin:4px 0 10px;">
+              Assign specific inbound phone numbers to route callers directly to this or other agents.
+            </p>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input id="newRoutePhone" type="tel" placeholder="+1 (555) 000-1111" style="flex:1;" />
+              <button id="addRouteBtn" class="small primary" style="white-space:nowrap;">+ Assign to Agent</button>
+            </div>
+            <div id="twilioRouteList" class="list" style="margin-top:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Embed -->
+        <div id="tab-embed" class="tab-panel card hidden">
+          <h2>Embed this agent</h2>
+          <p class="hint">Copy and paste this script tag into the bottom of your website's <code>&lt;body&gt;</code> to add a floating chat widget.</p>
+          <textarea id="embedScriptText" rows="3" readonly style="width:100%; font-family:monospace; margin-top:10px; background:#f9fafb; padding:10px; border:1px solid #e5e7eb; border-radius:8px;" onclick="this.select()"></textarea>
+          <button id="copyEmbedBtn" class="small" style="margin-top:10px;">Copy to clipboard</button>
+        </div>
+
+        <!-- Docker Appliance Export -->
+        <div id="tab-docker" class="tab-panel card hidden">
+          <div class="card-head">
+            <div>
+              <h2>🐳 Client Docker Appliance &amp; Model Sizing</h2>
+              <p class="sub" style="margin-top:2px;">Tailor the voice agent's STT, LLM, and TTS models to your client's hardware specs and privacy rules.</p>
+            </div>
+            <button id="downloadDockerBtn" class="primary">📦 Export Tailored Appliance (.zip)</button>
+          </div>
+
+          <!-- Sizing & Privacy Inputs -->
+          <div style="background:#131720; border:1px solid #242b38; border-radius:10px; padding:16px; margin:16px 0;">
+            <div style="font-weight:600; font-size:14px; margin-bottom:12px; color:#93c5fd; display:flex; align-items:center; gap:6px;">
+              <span>⚙️</span> Client Server Hardware &amp; Privacy Requirements
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+              <label style="margin-bottom:0;">
+                Privacy / Air-Gap Policy
+                <select id="spec_privacy">
+                  <option value="strict" selected>🔒 Strict Air-Gap (Local Only, Zero Egress)</option>
+                  <option value="cloud">⚡ Online / Hybrid Allowed (Groq, Cloud STT)</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Client GPU / VRAM
+                <select id="spec_vram">
+                  <option value="0">CPU Only (No GPU)</option>
+                  <option value="4">4 GB VRAM (RTX 3050, GTX 1660)</option>
+                  <option value="6">6 GB VRAM (RTX 4050, T4)</option>
+                  <option value="8" selected>8 GB VRAM (RTX 3060/4060, A10G)</option>
+                  <option value="12">12 GB VRAM (RTX 4070, 3060 12GB)</option>
+                  <option value="16">16 GB VRAM (RTX 4080, A5000, V100)</option>
+                  <option value="24">24+ GB VRAM (RTX 3090/4090, A100)</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Host System RAM
+                <select id="spec_ram">
+                  <option value="8">8 GB RAM</option>
+                  <option value="16" selected>16 GB RAM</option>
+                  <option value="32">32 GB RAM</option>
+                  <option value="64">64+ GB RAM</option>
+                </select>
+              </label>
+
+              <label style="margin-bottom:0;">
+                Expected Concurrency
+                <select id="spec_calls">
+                  <option value="1" selected>1–2 Concurrent Callers</option>
+                  <option value="5">5–10 Concurrent Callers</option>
+                  <option value="20">20+ Concurrent Callers</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- Dynamic Recommendation Result Card -->
+          <div id="recContainer" style="background:#0f1520; border:1px solid #1e3a8a; border-radius:10px; padding:18px; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+              <div>
+                <span id="recTag" class="tag" style="background:#1e3a8a; color:#93c5fd; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:600;">Optimal Architecture</span>
+                <h3 id="recTitle" style="margin:6px 0 2px; font-size:16px; color:#f8fafc;">Recommended Stack</h3>
+                <p id="recPrivacy" style="margin:0; font-size:12px; color:#38bdf8;">100% Local Inference</p>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:11px; color:#94a3b8;">Est. Turn Latency</div>
+                <div id="recLatency" style="font-size:18px; font-weight:700; color:#34d399;">~380 ms</div>
+              </div>
+            </div>
+
+            <!-- 3-Pillar Model Breakdown -->
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin:14px 0;">
+              <!-- LLM -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🧠 Reasoning (LLM)</div>
+                <div id="recLlmName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Qwen 2.5 7B</div>
+                <div id="recLlmReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">5.2 GB VRAM · Ollama</div>
+              </div>
+
+              <!-- STT -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🎙️ Transcription (STT)</div>
+                <div id="recSttName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Whisper Large-v3-Turbo</div>
+                <div id="recSttReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">1.8 GB VRAM · CUDA float16</div>
+              </div>
+
+              <!-- TTS -->
+              <div style="background:#171e2e; border:1px solid #2d3748; border-radius:8px; padding:12px;">
+                <div style="font-size:11px; color:#94a3b8; text-transform:uppercase; font-weight:600;">🔊 Voice Synthesis (TTS)</div>
+                <div id="recTtsName" style="font-size:14px; font-weight:600; color:#f1f5f9; margin-top:2px;">Kokoro 82M</div>
+                <div id="recTtsReq" style="font-size:11px; color:#60a5fa; margin-top:2px;">1.0 GB VRAM · Streaming</div>
+              </div>
+            </div>
+
+            <p id="recSummary" style="font-size:12px; color:#cbd5e1; margin:0 0 10px; line-height:1.5;">
+              Production voice standard. State-of-the-art transcription accuracy with 7B deep reasoning.
+            </p>
+
+            <!-- Alternative options -->
+            <div id="recAltsBox" style="margin-top:12px; padding-top:10px; border-top:1px solid #1e293b;">
+              <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">Alternative Configuration Options:</div>
+              <div id="recAltsList" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+          </div>
+
+          <!-- Quickstart Guide -->
+          <h3 style="margin-top:16px; margin-bottom:8px; font-size:14px;">🚀 Client Deployment Quickstart</h3>
+          <div id="dockerCommandPreview" style="background:#1e293b; color:#f8fafc; border-radius:8px; padding:14px; font-family:monospace; font-size:12px; line-height:1.6; overflow-x:auto;">
+            <span style="color:#94a3b8;"># 1. Unzip the downloaded tailored appliance</span><br/>
+            unzip voice_agent_appliance.zip &amp;&amp; cd voice_agent_appliance<br/><br/>
+            <span style="color:#94a3b8;"># 2. Launch containerized appliance</span><br/>
+            docker compose up -d --build<br/><br/>
+            <span id="dockerPullCommand" style="color:#38bdf8;">docker exec -it voice_agent_ollama ollama pull qwen2.5:7b</span><br/><br/>
+            <span style="color:#94a3b8;"># 3. Access in client browser</span><br/>
+            <span style="color:#38bdf8;">http://localhost:8000</span> (admin@appliance.local / admin123)
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer>LLM via free Groq tier · STT/TTS via your browser · data stored locally in <span class="mono">agents.db</span></footer>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="call-engine.js?v=20261013_restore_b9185d0_v10"></script>
+  <script src="app.js?v=20261013_restore_b9185d0_v10"></script>
+</body>
+</html>

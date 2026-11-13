@@ -1,0 +1,318 @@
+[
+  {
+    "n_tasks": 3,
+    "n_stages": 2,
+    "n_qubits": 6,
+    "serial_makespan_ms": 105.0,
+    "memory_mb": 204.76,
+    "memory_delta_mb": 141.37,
+    "cpu_percent": 18.0,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 105.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 3
+      },
+      "Greedy": {
+        "makespan_ms": 80.0,
+        "speedup": 1.31,
+        "solver_time_ms": 0.017,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 80.0,
+        "speedup": 1.31,
+        "solver_time_ms": 12.48,
+        "objective": 74.72,
+        "qubits": 6,
+        "stages": 2
+      },
+      "TabuSearch": {
+        "makespan_ms": 80.0,
+        "speedup": 1.31,
+        "solver_time_ms": 0.616,
+        "objective": 84.82,
+        "qubits": 6,
+        "stages": 2
+      },
+      "QAOA": {
+        "makespan_ms": 80.0,
+        "speedup": 1.31,
+        "solver_time_ms": 12802.222,
+        "objective": 84.82,
+        "qubits": 6,
+        "stages": 2,
+        "quantum_simulated": true
+      }
+    }
+  },
+  {
+    "n_tasks": 4,
+    "n_stages": 2,
+    "n_qubits": 8,
+    "serial_makespan_ms": 315.0,
+    "memory_mb": 207.98,
+    "memory_delta_mb": 3.22,
+    "cpu_percent": 20.4,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 315.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 4
+      },
+      "Greedy": {
+        "makespan_ms": 255.0,
+        "speedup": 1.24,
+        "solver_time_ms": 0.011,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 245.0,
+        "speedup": 1.29,
+        "solver_time_ms": 12.029,
+        "objective": 118.88,
+        "qubits": 8,
+        "stages": 2
+      },
+      "TabuSearch": {
+        "makespan_ms": 245.0,
+        "speedup": 1.29,
+        "solver_time_ms": 0.894,
+        "objective": 129.82,
+        "qubits": 8,
+        "stages": 2
+      },
+      "QAOA": {
+        "makespan_ms": 245.0,
+        "speedup": 1.29,
+        "solver_time_ms": 27655.368,
+        "objective": 129.82,
+        "qubits": 8,
+        "stages": 2,
+        "quantum_simulated": true
+      }
+    }
+  },
+  {
+    "n_tasks": 5,
+    "n_stages": 2,
+    "n_qubits": 10,
+    "serial_makespan_ms": 655.0,
+    "memory_mb": 207.98,
+    "memory_delta_mb": 0.0,
+    "cpu_percent": 15.6,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 655.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 5
+      },
+      "Greedy": {
+        "makespan_ms": 550.0,
+        "speedup": 1.19,
+        "solver_time_ms": 0.01,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 375.0,
+        "speedup": 1.75,
+        "solver_time_ms": 13.471,
+        "objective": 117.8,
+        "qubits": 10,
+        "stages": 2
+      },
+      "TabuSearch": {
+        "makespan_ms": 375.0,
+        "speedup": 1.75,
+        "solver_time_ms": 10.899,
+        "objective": 129.82,
+        "qubits": 10,
+        "stages": 2
+      },
+      "QAOA": {
+        "makespan_ms": 375.0,
+        "speedup": 1.75,
+        "solver_time_ms": 15.491,
+        "objective": 117.8,
+        "qubits": 10,
+        "stages": 2,
+        "quantum_simulated": false,
+        "note": "Qubit dimension > 8; classical simulated annealing boundary"
+      }
+    }
+  },
+  {
+    "n_tasks": 6,
+    "n_stages": 3,
+    "n_qubits": 18,
+    "serial_makespan_ms": 935.0,
+    "memory_mb": 207.98,
+    "memory_delta_mb": 0.0,
+    "cpu_percent": 38.0,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 935.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 6
+      },
+      "Greedy": {
+        "makespan_ms": 550.0,
+        "speedup": 1.7,
+        "solver_time_ms": 0.012,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 595.0,
+        "speedup": 1.57,
+        "solver_time_ms": 16.345,
+        "objective": 151.39999999999998,
+        "qubits": 18,
+        "stages": 3
+      },
+      "TabuSearch": {
+        "makespan_ms": 595.0,
+        "speedup": 1.57,
+        "solver_time_ms": 75.617,
+        "objective": 185.0,
+        "qubits": 18,
+        "stages": 3
+      },
+      "QAOA": {
+        "makespan_ms": 595.0,
+        "speedup": 1.57,
+        "solver_time_ms": 18.796,
+        "objective": 151.39999999999998,
+        "qubits": 18,
+        "stages": 3,
+        "quantum_simulated": false,
+        "note": "Qubit dimension > 8; classical simulated annealing boundary"
+      }
+    }
+  },
+  {
+    "n_tasks": 8,
+    "n_stages": 3,
+    "n_qubits": 24,
+    "serial_makespan_ms": 1250.0,
+    "memory_mb": 208.0,
+    "memory_delta_mb": 0.01,
+    "cpu_percent": 33.7,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 1250.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 8
+      },
+      "Greedy": {
+        "makespan_ms": 550.0,
+        "speedup": 2.27,
+        "solver_time_ms": 0.011,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 420.0,
+        "speedup": 2.98,
+        "solver_time_ms": 15.807,
+        "objective": 280.56,
+        "qubits": 24,
+        "stages": 3
+      },
+      "TabuSearch": {
+        "makespan_ms": 420.0,
+        "speedup": 2.98,
+        "solver_time_ms": 139.108,
+        "objective": 290.66,
+        "qubits": 24,
+        "stages": 3
+      },
+      "QAOA": {
+        "makespan_ms": 420.0,
+        "speedup": 2.98,
+        "solver_time_ms": 18.178,
+        "objective": 280.56,
+        "qubits": 24,
+        "stages": 3,
+        "quantum_simulated": false,
+        "note": "Qubit dimension > 8; classical simulated annealing boundary"
+      }
+    }
+  },
+  {
+    "n_tasks": 10,
+    "n_stages": 3,
+    "n_qubits": 30,
+    "serial_makespan_ms": 1800.0,
+    "memory_mb": 208.0,
+    "memory_delta_mb": 0.0,
+    "cpu_percent": 36.4,
+    "solvers": {
+      "Serial": {
+        "makespan_ms": 1800.0,
+        "speedup": 1.0,
+        "solver_time_ms": 0.0,
+        "objective": 0.0,
+        "qubits": 0,
+        "stages": 10
+      },
+      "Greedy": {
+        "makespan_ms": 550.0,
+        "speedup": 3.27,
+        "solver_time_ms": 0.018,
+        "objective": -10.0,
+        "qubits": 0,
+        "stages": 2
+      },
+      "SimulatedAnnealing": {
+        "makespan_ms": 420.0,
+        "speedup": 4.29,
+        "solver_time_ms": 14.247,
+        "objective": 386.15999999999997,
+        "qubits": 30,
+        "stages": 3
+      },
+      "TabuSearch": {
+        "makespan_ms": 420.0,
+        "speedup": 4.29,
+        "solver_time_ms": 186.709,
+        "objective": 405.0,
+        "qubits": 30,
+        "stages": 3
+      },
+      "QAOA": {
+        "makespan_ms": 420.0,
+        "speedup": 4.29,
+        "solver_time_ms": 16.384,
+        "objective": 386.15999999999997,
+        "qubits": 30,
+        "stages": 3,
+        "quantum_simulated": false,
+        "note": "Qubit dimension > 8; classical simulated annealing boundary"
+      }
+    }
+  }
+]

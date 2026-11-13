@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent System Architecture — On-Premise & Local Voice Loop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #edf2f7;
+      --canvas-bg: #e2ebf4;
+      --box-border: #334155;
+      --box-bg: #dbe7f2;
+      --card-bg: #ffffff;
+      --card-border: #64748b;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --arrow-color: #334155;
+      --accent-blue: #0284c7;
+      --accent-green: #16a34a;
+      --accent-purple: #7e22ce;
+      --accent-amber: #d97706;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    /* Wrapper div holds the scaled dimensions so body knows how tall to be */
+    .canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    /* 16:9 Presentation Canvas Container — always 1400×810, scaled to fit viewport */
+    .slide-canvas {
+      width: 1400px;
+      height: 810px;
+      flex-shrink: 0;
+      background: var(--canvas-bg);
+      border: 2px solid #64748b;
+      border-radius: 8px;
+      padding: 18px 24px 20px 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
+      user-select: none;
+      transform-origin: top left;
+    }
+
+    /* Slide Header */
+    .canvas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #94a3b8;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .header-badge {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #0369a1;
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .header-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+
+    .header-tags {
+      display: flex;
+      gap: 8px;
+    }
+
+    .tag-pill {
+      font-size: 10px;
+      font-weight: 700;
+      color: #334155;
+      background: #ffffff;
+      border: 1.5px solid var(--box-border);
+      border-radius: 4px;
+      padding: 4px 9px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-transform: uppercase;
+    }
+
+    /* On-Premise Docker Envelope Overlay Outline */
+    .docker-envelope {
+      border: 2px dashed #0284c7;
+      border-radius: 8px;
+      padding: 12px 14px 14px 14px;
+      background: rgba(2, 132, 199, 0.02);
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .docker-banner-tab {
+      position: absolute;
+      top: -11px;
+      left: 18px;
+      background: #0284c7;
+      color: #ffffff;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 10px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+    }
+
+    /* Main Grid Structure */
+    .diagram-body {
+      display: grid;
+      grid-template-columns: 360px 490px 450px;
+      grid-template-rows: 425px 215px;
+      column-gap: 34px;
+      row-gap: 18px;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      margin-top: 4px;
+    }
+
+    /* Layer Containers (Matching Reference Styling) */
+    .layer-container {
+      background: var(--box-bg);
+      border: 1.8px solid var(--box-border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .layer-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      text-align: center;
+      color: #0f172a;
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+
+    .layer-title span {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Step Sequence Badge */
+    .step-badge {
+      display: inline-block;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 800;
+      margin-right: 4px;
+    }
+
+    /* ==========================================================================
+       COLUMN 1: USER INPUT & LOCAL STT (SPEECH-TO-TEXT)
+       ========================================================================== */
+    .user-stt-stack {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 24px);
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .actor-row-compact {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      border: 1.5px solid var(--box-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .actor-avatar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 48px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .avatar-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 1.5px solid var(--box-border);
+      display: grid;
+      place-items: center;
+    }
+
+    .avatar-label {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .actor-stream-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .stream-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .stream-desc {
+      font-size: 8px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    /* STT Processing Card */
+    .stt-card {
+      background: #ffffff;
+      border: 1.5px solid var(--box-border);
+      border-radius: 6px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      justify-content: space-around;
+    }
+
+    .sub-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+
+    .sub-card-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-local {
+      font-size: 8px;
+      font-weight: 800;
+      color: #166534;
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .prep-tasks-column {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .prep-task-button {
+      background: #f8fafc;
+      border: 1.5px solid var(--box-border);
+      border-radius: 5px;
+      padding: 6px;
+      text-align: center;
+      font-size: 8.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+
+    .prep-task-button.highlight {
+      background: #eff6ff;
+      border-color: #0284c7;
+      color: #0369a1;
+    }
+
+    .payload-display {
+      background: #f1f5f9;
+      border: 1px dashed var(--box-border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .payload-label {
+      font-size: 7.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .payload-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+
+    /* ==========================================================================
+       COLUMN 2: LOCAL LLM AGENT CORE & QUANTUM PROMPT OPTIMIZATION
+       ========================================================================== */
+    .agent-core-stack {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 24px);
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .core-tier {
+      background: var(--card-bg);
+      border: 1.5px solid var(--box-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    /* Tier 1: Agent Prompt Design */
+    .tier-prompt-design {
+      background: #f8fafc;
+    }
+
+    .tier-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .tier-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .prompt-pills-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+
+    .prompt-pill {
+      background: #ffffff;
+      border: 1.2px solid #94a3b8;
+      border-radius: 4px;
+      padding: 4px 2px;
+      font-size: 8px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      color: #334155;
+    }
+
+    /* Tier 2: Quantum Prompt Optimizer */
+    .tier-quantum {
+      background: #f0fdf4;
+      border-color: #16a34a;
+    }
+
+    .quantum-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .quantum-formula {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: #15803d;
+      background: #ffffff;
+      border: 1.2px solid #86efac;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .quantum-desc-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .quantum-hero-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #166534;
+    }
+
+    .quantum-subtext {
+      font-size: 7.8px;
+      font-weight: 700;
+      color: #14532d;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    /* Tier 3: Local LLM Engine */
+    .tier-llm-engine {
+      background: #f0f9ff;
+      border-color: #0284c7;
+      padding: 9px 10px;
+    }
+
+    .llm-engine-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .llm-tag-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .llm-hero-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      font-weight: 800;
+      color: #0369a1;
+      background: #ffffff;
+      border: 1.5px solid #0284c7;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .llm-spec-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .llm-spec-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0c4a6e;
+    }
+
+    .llm-spec-desc {
+      font-size: 8px;
+      font-weight: 700;
+      color: #0284c7;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    /* Tier 4: Context & Execution Aggregator */
+    .tier-orchestrator {
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+    }
+
+    .orchestrator-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .orchestrator-badges {
+      display: flex;
+      gap: 5px;
+    }
+
+    .orch-pill {
+      font-size: 7.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+    }
+
+    /* ==========================================================================
+       COLUMN 3: LOCAL TTS (TEXT-TO-SPEECH) & USER RETURN
+       ========================================================================== */
+    .tts-output-stack {
+      display: flex;
+      flex-direction: column;
+      height: calc(100% - 24px);
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .tts-engine-card {
+      background: #ffffff;
+      border: 1.5px solid var(--box-border);
+      border-radius: 6px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+      justify-content: space-around;
+    }
+
+    .tts-modules-column {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .tts-feature-unit {
+      background: #f8fafc;
+      border: 1.5px solid var(--box-border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tts-feature-title {
+      font-size: 8.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .tts-feature-desc {
+      font-size: 7.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* Audio Delivery Back to Caller */
+    .caller-return-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #eff6ff;
+      border: 1.5px solid #0284c7;
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+
+    .internal-down-arrow {
+      text-align: center;
+      color: #0284c7;
+      font-weight: 800;
+      font-size: 11px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .loop-closure-badge {
+      text-align: center;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 5px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+    }
+
+    /* ==========================================================================
+       BOTTOM ROW: KNOWLEDGE, INTEGRATIONS & ON-PREMISE DOCKER DEPLOYMENT
+       ========================================================================== */
+    .box-integrations-knowledge {
+      grid-column: 1 / span 2;
+      background: var(--box-bg);
+      height: 100%;
+    }
+
+    .integrations-grid {
+      display: grid;
+      grid-template-columns: 295px 255px 285px;
+      gap: 14px;
+      height: calc(100% - 24px);
+      align-items: stretch;
+    }
+
+    .integration-tile {
+      background: #ffffff;
+      border: 1.5px solid var(--box-border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .tile-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .tile-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .tile-badge {
+      font-size: 7.5px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .tile-badge.purple {
+      background: #f3e8ff;
+      color: #7e22ce;
+      border: 1px solid #d8b4fe;
+    }
+
+    .tile-badge.blue {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .tile-badge.amber {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .tile-body-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tile-item {
+      font-size: 8px;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .tile-item::before {
+      content: "•";
+      color: var(--box-border);
+      font-weight: 900;
+    }
+
+    .tile-footer {
+      background: #f8fafc;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 7.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Box 5: On-Premise Docker Appliance & Zero Data Egress */
+    .box-docker-deployment {
+      grid-column: 3;
+      background: #ffffff;
+      border: 1.8px solid #0284c7;
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: inset 0 0 0 1px #bae6fd;
+    }
+
+    .docker-delivery-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .docker-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #0284c7;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .docker-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .docker-main-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .docker-sub-title {
+      font-size: 8px;
+      font-weight: 700;
+      color: #0284c7;
+      text-transform: uppercase;
+    }
+
+    .docker-benefits {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin: 4px 0;
+    }
+
+    .benefit-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #0f172a;
+    }
+
+    .benefit-check {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #166534;
+      display: grid;
+      place-items: center;
+      font-size: 9px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .egress-callout {
+      background: #fef2f2;
+      border: 1.2px solid #f87171;
+      border-radius: 5px;
+      padding: 5px 8px;
+      text-align: center;
+    }
+
+    .egress-callout-title {
+      font-size: 8.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #991b1b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .egress-callout-desc {
+      font-size: 7.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #b91c1c;
+      margin-top: 1px;
+    }
+
+    /* Pixel-Perfect SVG Arrow Canvas */
+    .connector-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Floating Print Button */
+    .floating-print-btn {
+      position: fixed;
+      bottom: 12px;
+      right: 18px;
+      background: #0f172a;
+      color: #ffffff;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 100;
+    }
+
+    .floating-print-btn:hover {
+      background: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvasWrapper" class="canvas-wrapper">
+  <div class="slide-canvas" id="canvas">
+
+    <!-- Slide Header -->
+    <div class="canvas-header">
+      <div class="header-left">
+        <div class="header-badge">ENTERPRISE ON-PREMISE VOICE ARCHITECTURE</div>
+        <h1 class="header-title">Containerized Local Voice Agent (STT &rarr; LLM &rarr; TTS)</h1>
+      </div>
+      <div class="header-tags">
+        <span class="tag-pill">
+          <svg width="12" height="12" fill="none" stroke="#0284c7" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+          Docker Packaged
+        </span>
+        <span class="tag-pill">
+          <svg width="12" height="12" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
+          Zero Data Egress
+        </span>
+        <span class="tag-pill">
+          <svg width="12" height="12" fill="none" stroke="#7e22ce" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8M12 8v8"></path></svg>
+          Quantum Prompt Optimized
+        </span>
+      </div>
+    </div>
+
+    <!-- Container Envelope -->
+    <div class="docker-envelope">
+      <div class="docker-banner-tab">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M22.3 11.6c-.3-.2-1.8-1.2-4.5-.4-1.2-1.9-3.2-3.1-5.5-3.2l-.3 1.5c1.8.1 3.4 1 4.4 2.5-.5.3-1 .8-1.4 1.3H2.8c-.5 0-.8.4-.8.8v6.7c0 .5.4.8.8.8h17.9c2.3 0 3.8-1.8 3.8-4.2 0-2.3-1.4-4.8-2.2-5.5zM6.2 13.5H4.5v-1.7h1.7v1.7zm3.1 0H7.6v-1.7h1.7v1.7zm3.1 0h-1.7v-1.7h1.7v1.7zm0-2.6h-1.7V9.2h1.7v1.7zm3.1 2.6h-1.7v-1.7h1.7v1.7zm0-2.6h-1.7V9.2h1.7v1.7zm3.1 2.6h-1.7v-1.7h1.7v1.7z"/></svg>
+        CLIENT ON-PREMISE AIR-GAPPED DOCKER CONTAINER (ALL AUDIO &amp; INFERENCE PROCESSED LOCALLY)
+      </div>
+
+      <div class="diagram-body">
+
+        <!-- ==========================================================================
+             COLUMN 1: USER INPUT & LOCAL STT (BOX 1)
+             ========================================================================== -->
+        <div class="layer-container" id="box1">
+          <div class="layer-title">
+            <span class="step-badge">STAGE 1</span> 1. USER INPUT &amp; LOCAL STT
+            <span>(100% LOCAL AUDIO PREPROCESSING)</span>
+          </div>
+
+          <div class="user-stt-stack">
+            <!-- Caller / Microphone In -->
+            <div class="actor-row-compact" id="callerMicUnit">
+              <div class="actor-avatar">
+                <div class="avatar-icon">
+                  <svg width="18" height="18" fill="none" stroke="#0f172a" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"></path></svg>
+                </div>
+                <span class="avatar-label">CALLER</span>
+              </div>
+              <div class="actor-stream-info">
+                <span class="stream-title">RAW VOICE STREAM (MIC IN)</span>
+                <span class="stream-desc">Continuous WebRTC / SIP Audio Stream with Barge-in Interruption</span>
+              </div>
+            </div>
+
+            <!-- Speech Recognition Engine -->
+            <div class="stt-card" id="sttCard">
+              <div class="sub-card-header">
+                <span class="sub-card-title">
+                  <svg width="16" height="16" fill="none" stroke="#0f172a" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3"></path></svg>
+                  LOCAL SPEECH-TO-TEXT (STT)
+                </span>
+                <span class="badge-local">ON-PREM</span>
+              </div>
+
+              <div class="prep-tasks-column">
+                <div class="prep-task-button">1. ACOUSTIC DSP &amp; NOISE SUPPRESSION</div>
+                <div class="prep-task-button highlight">2. WHISPER ON-PREM RECOGNITION</div>
+                <div class="prep-task-button">3. VOICE ACTIVITY DETECTION (VAD)</div>
+              </div>
+
+              <!-- Output Transcript Payload -->
+              <div class="payload-display" id="sttOutputPayload">
+                <div class="payload-label">Transcribed User Prompt Token Output &rarr;</div>
+                <div class="payload-text">&ldquo;Can I book an appointment tomorrow at 3 PM?&rdquo;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             COLUMN 2: LOCAL LLM & QUANTUM PROMPT OPTIMIZER (BOX 2)
+             ========================================================================== -->
+        <div class="layer-container" id="box2">
+          <div class="layer-title">
+            <span class="step-badge">STAGE 2</span> 2. LOCAL LLM AGENT &amp; PROMPT OPTIMIZATION
+            <span>(REASONING, DIALOGUE CONTROL &amp; INTENT RESOLUTION)</span>
+          </div>
+
+          <div class="agent-core-stack">
+            <!-- 2A. Agent Prompt Engineering -->
+            <div class="core-tier tier-prompt-design" id="promptDesignTier">
+              <div class="tier-title-row">
+                <span class="tier-title">
+                  <svg width="14" height="14" fill="none" stroke="#0f172a" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"></path></svg>
+                  AGENT DESIGN VIA PROMPTING
+                </span>
+                <span style="font-size: 7.5px; font-weight: 800; color: #475569; text-transform: uppercase;">PROMPT SPECIFICATION</span>
+              </div>
+              <div class="prompt-pills-row">
+                <div class="prompt-pill">System Personas</div>
+                <div class="prompt-pill">State Transition Logic</div>
+                <div class="prompt-pill">Safety Guardrails</div>
+              </div>
+            </div>
+
+            <!-- 2B. Quantum Prompt Optimizer -->
+            <div class="core-tier tier-quantum" id="quantumTier">
+              <div class="tier-title-row">
+                <span class="tier-title" style="color: #15803d;">
+                  <svg width="14" height="14" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8M12 8v8"></path></svg>
+                  QUANTUM PROMPT OPTIMIZER
+                </span>
+                <span class="badge-local" style="background:#bbf7d0; color:#14532d; border-color:#86efac;">PROMPT PATH OPTIMIZATION</span>
+              </div>
+              <div class="quantum-inner">
+                <div class="quantum-formula">
+                  H = &sum; J<sub>ij</sub> z<sub>i</sub> z<sub>j</sub>
+                </div>
+                <div class="quantum-desc-box">
+                  <span class="quantum-hero-title">QUBO PROMPT PATH SEARCH</span>
+                  <span class="quantum-subtext">Optimizes prompt path routing, pruning ambiguity and minimizing inference token hops before LLM execution</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2C. Local LLM Reasoning Engine -->
+            <div class="core-tier tier-llm-engine" id="llmEngineTier">
+              <div class="tier-title-row">
+                <span class="tier-title" style="color: #0369a1;">
+                  <svg width="14" height="14" fill="none" stroke="#0284c7" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a9 9 0 019 9c0 3.6-2.4 6.6-5.8 8.1l-1.2 2.9-2-2.5A9 9 0 0112 2z"></path></svg>
+                  LOCAL LLM INFERENCE ENGINE
+                </span>
+                <span class="badge-local" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">AIR-GAPPED MODEL</span>
+              </div>
+              <div class="llm-engine-content">
+                <div class="llm-tag-group">
+                  <div class="llm-hero-badge">LLM</div>
+                  <div class="llm-spec-info">
+                    <span class="llm-spec-title">On-Premise Open-Weight Model</span>
+                    <span class="llm-spec-desc">Llama 3 / Mistral Core (Local GPU/CPU)</span>
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <span style="font-size: 8px; font-weight: 800; text-transform: uppercase; color: #0f172a; display: block;">NO CLOUD API CALLS</span>
+                  <span style="font-size: 7.5px; font-weight: 700; color: #0284c7; text-transform: uppercase;">Self-Hosted Weight Execution</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2D. Dynamic Context & Dialogue Orchestrator -->
+            <div class="core-tier tier-orchestrator" id="orchestratorTier">
+              <span class="orchestrator-label">CONTEXT &amp; TOOL CALL DISPATCHER</span>
+              <div class="orchestrator-badges">
+                <span class="orch-pill">BM25 Grounded</span>
+                <span class="orch-pill">State Buffer</span>
+                <span class="orch-pill">Tool Extraction</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             COLUMN 3: LOCAL TTS & USER RETURN (BOX 3)
+             ========================================================================== -->
+        <div class="layer-container" id="box3">
+          <div class="layer-title">
+            <span class="step-badge">STAGE 3</span> 3. LOCAL TTS &amp; AUDIO RETURN
+            <span>(STREAMING SYNTHESIS TO CALLER)</span>
+          </div>
+
+          <div class="tts-output-stack">
+            <!-- TTS Engine Card -->
+            <div class="tts-engine-card" id="ttsCard">
+              <div class="sub-card-header">
+                <span class="sub-card-title">
+                  <svg width="16" height="16" fill="none" stroke="#0f172a" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path></svg>
+                  LOCAL TEXT-TO-SPEECH (TTS)
+                </span>
+                <span class="badge-local">ON-PREM</span>
+              </div>
+
+              <div class="tts-modules-column">
+                <div class="tts-feature-unit">
+                  <span class="tts-feature-title">STREAMING SYNTHESIZER</span>
+                  <span class="tts-feature-desc">Sentence Chunk Prefetch</span>
+                </div>
+                <div class="tts-feature-unit">
+                  <span class="tts-feature-title">PIPER / NEURAL ENGINE</span>
+                  <span class="tts-feature-desc">Sub-100ms Synthesis</span>
+                </div>
+                <div class="tts-feature-unit">
+                  <span class="tts-feature-title">GAPLESS AUDIO STREAMER</span>
+                  <span class="tts-feature-desc">Zero Latency Playback</span>
+                </div>
+              </div>
+
+              <!-- Output Synthesized Speech Payload -->
+              <div class="payload-display" id="ttsOutputPayload">
+                <div class="payload-label">Synthesized Agent Speech Output &rarr;</div>
+                <div class="payload-text">&ldquo;You are booked for tomorrow at 3:00 PM.&rdquo;</div>
+              </div>
+            </div>
+
+            <!-- Inter-block flow indicator -->
+            <div class="internal-down-arrow">
+              &darr; Streaming Audio Playback
+            </div>
+
+            <!-- Caller / Speaker Return (Completing User -> STT -> LLM -> TTS -> User) -->
+            <div class="caller-return-card" id="callerSpeakerUnit">
+              <div class="actor-avatar">
+                <div class="avatar-icon" style="border-color: #0284c7; background: #ffffff;">
+                  <svg width="18" height="18" fill="none" stroke="#0284c7" stroke-width="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 010 7.07"></path></svg>
+                </div>
+                <span class="avatar-label" style="color: #0284c7;">CALLER</span>
+              </div>
+              <div class="actor-stream-info">
+                <span class="stream-title" style="color: #0369a1;">VOICE AUDIO RETURN (SPEAKER)</span>
+                <span class="stream-desc">Natural voice response delivered instantly with immediate barge-in interruption detection</span>
+              </div>
+            </div>
+
+            <!-- Loop Complete Highlight -->
+            <div class="loop-closure-badge">
+              &#10003; 100% LOCAL LOOP COMPLETED: USER &rarr; STT &rarr; LLM &rarr; TTS &rarr; USER
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             BOTTOM ROW LEFT: KNOWLEDGE BASE & INTEGRATIONS (BOX 4)
+             ========================================================================== -->
+        <div class="layer-container box-integrations-knowledge" id="box4">
+          <div class="layer-title">
+            <span class="step-badge">STAGE 4</span> 4. KNOWLEDGE BASE &amp; ENTERPRISE INTEGRATIONS
+            <span>(GROUNDING, GOOGLE WORKSPACE &amp; ZAPIER WEBHOOKS)</span>
+          </div>
+
+          <div class="integrations-grid">
+            <!-- 4A: BM25 Knowledge Base -->
+            <div class="integration-tile" id="kbTile">
+              <div class="tile-top">
+                <span class="tile-title">
+                  <svg width="14" height="14" fill="none" stroke="#7e22ce" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                  BM25 KNOWLEDGE BASE
+                </span>
+                <span class="tile-badge purple">LOCAL RAG</span>
+              </div>
+              <div class="tile-body-list">
+                <div class="tile-item">BM25 Keyword Matching</div>
+                <div class="tile-item">Lexical TF-IDF Scoring</div>
+                <div class="tile-item">Enterprise Documents &amp; FAQs</div>
+              </div>
+              <div class="tile-footer">
+                Context Injected Into Prompt Path
+              </div>
+            </div>
+
+            <!-- 4B: Google Integration -->
+            <div class="integration-tile" id="googleTile">
+              <div class="tile-top">
+                <span class="tile-title">
+                  <svg width="14" height="14" fill="none" stroke="#0284c7" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  GOOGLE INTEGRATION
+                </span>
+                <span class="tile-badge blue">GCAL &amp; TOOLS</span>
+              </div>
+              <div class="tile-body-list">
+                <div class="tile-item">Google Calendar Booking</div>
+                <div class="tile-item">Live Availability Checks</div>
+                <div class="tile-item">Event Confirmation &amp; Sync</div>
+              </div>
+              <div class="tile-footer">
+                Transactional Tool Calls
+              </div>
+            </div>
+
+            <!-- 4C: Zapier-Like Webhooks -->
+            <div class="integration-tile" id="webhookTile">
+              <div class="tile-top">
+                <span class="tile-title">
+                  <svg width="14" height="14" fill="none" stroke="#d97706" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                  ZAPIER-STYLE WEBHOOKS
+                </span>
+                <span class="tile-badge amber">AUTOMATION</span>
+              </div>
+              <div class="tile-body-list">
+                <div class="tile-item">Zapier / Make / n8n Events</div>
+                <div class="tile-item">CRM &amp; Lead Auto-Capture</div>
+                <div class="tile-item">Custom Webhook Dispatch</div>
+              </div>
+              <div class="tile-footer">
+                External Action Triggers
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================================
+             BOTTOM ROW RIGHT: DOCKER IMAGE & ON-PREM DELIVERY (BOX 5)
+             ========================================================================== -->
+        <div class="box-docker-deployment" id="box5">
+          <div class="docker-delivery-header">
+            <div class="docker-icon-box">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M22.3 11.6c-.3-.2-1.8-1.2-4.5-.4-1.2-1.9-3.2-3.1-5.5-3.2l-.3 1.5c1.8.1 3.4 1 4.4 2.5-.5.3-1 .8-1.4 1.3H2.8c-.5 0-.8.4-.8.8v6.7c0 .5.4.8.8.8h17.9c2.3 0 3.8-1.8 3.8-4.2 0-2.3-1.4-4.8-2.2-5.5zM6.2 13.5H4.5v-1.7h1.7v1.7zm3.1 0H7.6v-1.7h1.7v1.7zm3.1 0h-1.7v-1.7h1.7v1.7zm0-2.6h-1.7V9.2h1.7v1.7zm3.1 2.6h-1.7v-1.7h1.7v1.7zm0-2.6h-1.7V9.2h1.7v1.7zm3.1 2.6h-1.7v-1.7h1.7v1.7z"/></svg>
+            </div>
+            <div class="docker-titles">
+              <span class="docker-main-title">ON-PREMISE DOCKER APPLIANCE</span>
+              <span class="docker-sub-title">CONTAINERIZED SHIPMENT TO CLIENT</span>
+            </div>
+          </div>
+
+          <div class="docker-benefits">
+            <div class="benefit-row">
+              <span class="benefit-check">&#10003;</span>
+              <span>All-In-One Pre-Built Docker Image</span>
+            </div>
+            <div class="benefit-row">
+              <span class="benefit-check">&#10003;</span>
+              <span>Runs on Client's Private Servers / VPC</span>
+            </div>
+            <div class="benefit-row">
+              <span class="benefit-check">&#10003;</span>
+              <span>No Cloud Audio or LLM Dependencies</span>
+            </div>
+          </div>
+
+          <div class="egress-callout">
+            <div class="egress-callout-title">
+              <svg width="12" height="12" fill="none" stroke="#991b1b" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              100% DATA SOVEREIGNTY (AIR-GAPPED)
+            </div>
+            <div class="egress-callout-desc">Zero customer voice, transcripts, or enterprise data ever leaves the organization</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DYNAMIC PIXEL-PERFECT SVG CONNECTOR OVERLAY -->
+    <!-- SVG positioned relative to slide-canvas; script offsets from canvas origin -->
+    <svg class="connector-svg" id="arrowSvg">
+      <defs>
+        <marker id="arrowRight" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#334155" />
+        </marker>
+        <marker id="arrowLeft" viewBox="0 0 10 10" refX="3" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 8 1 L 0 5 L 8 9 z" fill="#334155" />
+        </marker>
+        <marker id="arrowDown" viewBox="0 0 10 10" refX="5" refY="7" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 1 0 L 5 8 L 9 0 z" fill="#334155" />
+        </marker>
+        <marker id="arrowUp" viewBox="0 0 10 10" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 1 9 L 5 1 L 9 9 z" fill="#334155" />
+        </marker>
+        <marker id="arrowUpPurple" viewBox="0 0 10 10" refX="5" refY="3" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 1 9 L 5 1 L 9 9 z" fill="#7e22ce" />
+        </marker>
+      </defs>
+
+      <!-- 1. STT Output -> Local LLM Input (aligned horizontal arrow) -->
+      <path id="pathSttToLlm" stroke="#334155" stroke-width="2.2" fill="none" marker-end="url(#arrowRight)" />
+
+      <!-- 2. Local LLM Output -> TTS Input (aligned horizontal arrow) -->
+      <path id="pathLlmToTts" stroke="#334155" stroke-width="2.2" fill="none" marker-end="url(#arrowRight)" />
+
+      <!-- 3. BM25 Knowledge Base -> LLM Orchestrator (clean stepped orthogonal upward) -->
+      <path id="pathKbToLlm" stroke="#7e22ce" stroke-width="2" stroke-dasharray="5 4" fill="none" marker-end="url(#arrowUpPurple)" />
+
+      <!-- 4. Box2 -> Box4 (Orchestrator dispatches down to integrations row) -->
+      <path id="pathLlmToIntegrations" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrowDown)" />
+    </svg>
+  </div>
+  </div>
+
+  <button class="floating-print-btn" onclick="window.print()">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-4 0h-4v4h8v-4z"></path></svg>
+    Save as PDF / Print Slide
+  </button>
+
+  <script>
+    // ── Scale canvas to always fit viewport without clipping ──────────────────
+    function scaleCanvas() {
+      const canvas  = document.getElementById('canvas');
+      const wrapper = document.getElementById('canvasWrapper');
+      const CANVAS_W = 1400;
+      const CANVAS_H = 810;
+      const PAD = 32; // 16px each side
+      const availW = window.innerWidth  - PAD;
+      const availH = window.innerHeight - PAD;
+      // Scale so entire canvas fits in viewport (never exceed 1:1)
+      const scale = Math.min(1, availW / CANVAS_W, availH / CANVAS_H);
+      canvas.style.transform = `scale(${scale})`;
+      // Resize the wrapper so body height is correct (prevents dead scroll space)
+      if (wrapper) {
+        wrapper.style.width  = `${Math.round(CANVAS_W * scale)}px`;
+        wrapper.style.height = `${Math.round(CANVAS_H * scale)}px`;
+      }
+    }
+    scaleCanvas();
+    window.addEventListener('resize', scaleCanvas);
+
+    // ── Connector arrows ────────────────────────────────────────────────────────
+    function updateConnectors() {
+      const origin = document.getElementById('canvas').getBoundingClientRect();
+
+      function r(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        // Undo the scale transform so coords match the SVG's unscaled space
+        const scale = parseFloat(document.getElementById('canvas').style.transform.replace('scale(','').replace(')','')) || 1;
+        return {
+          l:  (b.left   - origin.left)  / scale,
+          r:  (b.right  - origin.left)  / scale,
+          t:  (b.top    - origin.top)   / scale,
+          b:  (b.bottom - origin.top)   / scale,
+          cx: ((b.left + b.right)  / 2 - origin.left)  / scale,
+          cy: ((b.top  + b.bottom) / 2 - origin.top)   / scale,
+        };
+      }
+
+      const box1   = r('box1');
+      const box2   = r('box2');
+      const box3   = r('box3');
+      const box4   = r('box4');
+      const llm    = r('llmEngineTier');
+      const orch   = r('orchestratorTier');
+      const kbTile = r('kbTile');
+
+      // ── Arrow 1: Box1 right → Box2 left (at LLM engine y-center) ─────────────
+      const p1 = document.getElementById('pathSttToLlm');
+      if (p1 && box1 && box2 && llm) {
+        const y = llm.cy;
+        p1.setAttribute('d', `M ${box1.r} ${y} L ${box2.l} ${y}`);
+      }
+
+      // ── Arrow 2: Box2 right → Box3 left (at same LLM engine y-center) ────────
+      const p2 = document.getElementById('pathLlmToTts');
+      if (p2 && box2 && box3 && llm) {
+        const y = llm.cy;
+        p2.setAttribute('d', `M ${box2.r} ${y} L ${box3.l} ${y}`);
+      }
+
+      // ── Arrow 3: BM25 tile top → Orchestrator tier bottom ─────────────────────
+      // Routes up the LEFT side of Box2 to stay separate from Arrow 4
+      const p3 = document.getElementById('pathKbToLlm');
+      if (p3 && kbTile && orch && box2 && box4) {
+        const sx  = kbTile.cx;                    // start x: BM25 tile center
+        const sy  = kbTile.t;                     // start y: BM25 tile top edge
+        const midY = box2.b + (box4.t - box2.b) / 2; // midpoint in the row gap
+        const tx  = box2.l + 40;                  // enter box2 near its left side
+        const ty  = orch.b;                       // end y: orchestrator bottom
+        p3.setAttribute('d', `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`);
+      }
+
+      // ── Arrow 4: Box2 bottom → Box4 top (center, separate from arrow 3) ──────
+      const p4 = document.getElementById('pathLlmToIntegrations');
+      if (p4 && box2 && box4) {
+        const sx = box2.cx;   // box2 center x
+        const sy = box2.b;
+        const ey = box4.t;
+        p4.setAttribute('d', `M ${sx} ${sy} L ${sx} ${ey}`);
+      }
+    }
+
+    window.addEventListener('load', () => { scaleCanvas(); updateConnectors(); });
+    window.addEventListener('resize', () => { scaleCanvas(); updateConnectors(); });
+    setTimeout(updateConnectors, 50);
+    setTimeout(updateConnectors, 200);
+    setTimeout(updateConnectors, 500);
+    setTimeout(updateConnectors, 1000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+# Project: Hybrid Quantum-Classical Parallel Task Scheduler
+
+## 1. Objective
+
+Build a Python task-execution engine that executes independent CPU, I/O, GPU and AI workloads concurrently instead of running every task sequentially.
+
+The system must use a dependency-aware DAG scheduler, resource-aware worker pools and a pluggable scheduling optimizer. Integrate a real quantum or quantum-hybrid optimization provider for experimental task scheduling.
+
+Target workload: 2–20 concurrent tasks.
+
+The system must work without quantum credentials. Quantum optimization must be optional, configurable and replaceable.
+
+## 2. Core requirements
+
+1. Execute independent tasks concurrently.
+2. Respect task dependencies and prevent invalid execution order.
+3. Support CPU-bound, I/O-bound, GPU-bound and AI/remote tasks.
+4. Track CPU, GPU, memory and concurrency limits.
+5. Support priorities, deadlines, retries, timeouts and cancellation.
+6. Record execution time, queue time, task state and resource information.
+7. Provide a classical scheduling fallback.
+8. Integrate a genuine quantum or hybrid solver through an adapter.
+9. Validate every optimizer-generated schedule before execution.
+10. Benchmark classical and quantum-assisted scheduling using identical workloads.
+
+## 3. Architecture
+
+Separate the application into these modules:
+
+- `api/`: task submission and status endpoints.
+- `models/`: task definitions, resource requirements and execution states.
+- `graph/`: DAG construction, cycle detection and dependency resolution.
+- `scheduler/`: ready queue, priorities, resource admission and dispatch.
+- `runtime/`: CPU, asynchronous I/O, GPU and remote execution.
+- `optimizers/`: optimizer interface and classical baseline.
+- `quantum/`: QUBO/CQM formulation, provider adapters, decoding and validation.
+- `metrics/`: timing, utilization, throughput and benchmark results.
+- `storage/`: task metadata and execution history.
+- `tests/`: unit, integration, concurrency and optimizer tests.
+- `benchmarks/`: reproducible classical-versus-quantum experiments.
+
+Use clear interfaces between orchestration, optimization and execution. The quantum optimizer must never execute application tasks itself.
+
+## 4. Scheduling algorithm
+
+Implement the following control loop:
+
+1. Accept a task graph and validate task definitions.
+2. Detect cycles and reject invalid graphs.
+3. Identify tasks whose dependencies have all completed.
+4. Estimate task duration and required resources.
+5. Rank ready tasks using critical-path priority, deadline urgency and resource feasibility.
+6. Dispatch eligible tasks immediately when a suitable worker is available.
+7. Invoke quantum optimization only when a configurable decision threshold is met.
+8. Apply a scheduling timeout and use the classical fallback when necessary.
+9. Validate proposed assignments for dependencies, resource limits and task uniqueness.
+10. Update task states and release newly eligible dependent tasks as tasks finish.
+11. Collect metrics and persist final results.
+
+Do not block dispatch of independent tasks while waiting for a quantum solver response.
+
+## 5. Classical runtime
+
+Use Ray Core for process and distributed task execution. Use Python `asyncio` for asynchronous I/O operations.
+
+Implement distinct execution policies for:
+
+- CPU: bounded process/task concurrency.
+- I/O: asynchronous operations with connection and request limits.
+- GPU: explicit GPU resource requests, queueing and memory-aware admission.
+- AI/remote: configurable concurrency, timeouts, rate limits and retries.
+
+Use bounded queues and avoid uncontrolled task submission. GPU concurrency must be configurable and must not assume that one logical GPU resource guarantees safe VRAM usage.
+
+## 6. Quantum integration
+
+Implement the first provider using a real quantum/hybrid optimization SDK, preferably D-Wave Ocean for a QUBO/CQM scheduling experiment.
+
+Define a common `ScheduleOptimizer` interface with:
+
+- `optimize(problem, timeout)`
+- `validate(solution, problem)`
+- `get_solver_metadata()`
+
+Implement:
+- A classical baseline optimizer.
+- A quantum/hybrid provider adapter.
+- QUBO/CQM model construction.
+- Solution decoding.
+- Constraint validation.
+- Timeout handling and classical fallback.
+
+Keep provider credentials in environment variables or a secret manager. Never commit credentials.
+
+Do not fabricate quantum results or claim quantum advantage without controlled measurements. Record the provider, solver type, submission time, solve time, objective value and whether quantum hardware was actually used when that information is available.
+
+Do not send application payloads, secrets or sensitive task data to a cloud quantum provider. Send only the minimum abstract scheduling information required.
+
+## 7. Optimization formulation
+
+Start with task-to-worker assignment variables and a scheduling objective incorporating estimated makespan, deadlines, resource costs and assignment penalties.
+
+Use CQM when explicit constraints are more natural than penalty encoding. Add QUBO conversion only where necessary.
+
+Handle task dependencies in the DAG scheduler. For the first optimizer version, optimize only the ready-task batch or a bounded scheduling horizon, and treat running tasks as fixed commitments.
+
+Document every approximation and verify that all returned assignments are feasible.
+
+## 8. API and observability
+
+Expose endpoints for:
+- Submit a task graph.
+- Query a task and its state.
+- Query graph execution progress.
+- Cancel eligible tasks.
+- Query worker/resource status.
+- Select scheduling mode.
+- Retrieve execution metrics.
+- Start a benchmark run.
+
+Use structured logging and clear error responses. Keep the quantum provider's status and scheduling decision visible in diagnostic output.
+
+## 9. Testing
+
+Include tests for:
+- Independent tasks overlapping in execution.
+- Dependency ordering.
+- DAG cycle rejection.
+- CPU concurrency limits.
+- I/O concurrency limits.
+- GPU admission control.
+- Task failures, timeouts and retries.
+- Invalid optimizer output.
+- Quantum provider unavailable.
+- Quantum optimization timeout.
+- Classical fallback.
+- Reproducible benchmark calculations.
+
+Use mocks for provider integration tests. Real quantum integration tests must be opt-in and require configured credentials.
+
+## 10. Benchmark methodology
+
+Compare:
+A. Sequential execution.
+B. Classical DAG scheduling.
+C. Classical optimization with the same objective.
+D. Quantum/hybrid-assisted optimization.
+E. QAOA only if a real gate-based provider is explicitly configured.
+
+Measure makespan, scheduling overhead, throughput, deadline misses, feasibility rate, resource utilization and monetary cost.
+
+Include model construction, network submission and solver time in end-to-end scheduling overhead. Separate quantum hardware time from total provider latency when the provider exposes both.
+
+Run multiple trials with identical task graphs and comparable resource constraints. Report medians, variability and limitations. Do not claim quantum speedup from objective quality alone.
+
+## 11. Delivery milestones
+
+Phase 1: Project structure, task models, DAG validation and classical scheduler.
+
+Phase 2: Concurrent runtime and dependency-driven dispatch.
+
+Phase 3: Resource admission, retries, cancellation and metrics.
+
+Phase 4: Classical optimizer and benchmark baseline.
+
+Phase 5: Quantum/hybrid integration and solution validation.
+
+Phase 6: Fault handling, integration tests, benchmark report and documentation.
+
+Phase 7: Optional QAOA provider and comparative experiments.
+
+At each phase, run tests and fix failures before moving forward.
+
+## 12. Acceptance criteria
+
+- Independent eligible tasks overlap in execution.
+- Dependent tasks never start before their prerequisites complete successfully.
+- Resource limits are respected by admission control.
+- The application works without quantum credentials.
+- Quantum failure or timeout does not stop classical execution.
+- Invalid quantum-generated assignments are rejected.
+- Quantum/hybrid usage is verified from provider metadata where possible.
+- Benchmark results are reproducible and distinguish solver quality from end-to-end performance.
+- Installation, configuration, execution, testing and benchmarking are documented.
+
+Begin by inspecting the existing repository. Preserve useful code and established conventions. Present a concise implementation plan, then implement Phase 1 and its tests. Continue phase by phase, running the test suite after each phase. Do not stop at pseudocode, placeholders or a proposed architecture.

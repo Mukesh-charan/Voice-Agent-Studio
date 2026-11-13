@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Agent Studio — End-to-End Workflow Diagram</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #ffffff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .diagram-canvas {
+      width: 1440px;
+      height: 780px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 24px 30px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Column Headers */
+    .header-row {
+      display: flex;
+      position: absolute;
+      top: 24px;
+      left: 30px;
+      right: 30px;
+      height: 65px;
+    }
+
+    .col-hdr-1 { width: 155px; }
+    .col-hdr-2 { width: 165px; margin-left: 10px; }
+    .col-hdr-3 { width: 215px; margin-left: 10px; }
+    .col-hdr-4 { width: 555px; margin-left: 15px; }
+    .col-hdr-5 { width: 270px; margin-left: 10px; }
+
+    .hdr-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+    .hdr-sub {
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.3;
+    }
+
+    .c-green { color: #16a34a; }
+    .c-blue { color: #2563eb; }
+    .c-purple { color: #7c3aed; }
+    .c-orange { color: #ea580c; }
+    .c-amber { color: #d97706; }
+
+    /* Absolute Placement for Elements */
+    .circle-node {
+      position: absolute;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .node-1 {
+      top: 105px;
+      left: 64px;
+      background: #f0fdf4;
+      border: 2.5px solid #22c55e;
+      box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.12);
+      color: #16a34a;
+    }
+
+    .node-1-desc {
+      position: absolute;
+      top: 205px;
+      left: 32px;
+      width: 150px;
+      font-size: 11px;
+      color: #475569;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .node-2 {
+      top: 105px;
+      left: 226px;
+      background: #eff6ff;
+      border: 2.5px solid #3b82f6;
+      box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.12);
+      color: #2563eb;
+    }
+
+    .sub-whisper-card {
+      position: absolute;
+      top: 245px;
+      left: 233px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1.5px solid #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      z-index: 5;
+    }
+
+    .sub-whisper-label {
+      position: absolute;
+      top: 325px;
+      left: 195px;
+      width: 150px;
+      text-align: center;
+    }
+    .whisper-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0f766e;
+    }
+    .whisper-details {
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    .node-3 {
+      top: 105px;
+      left: 420px;
+      background: #faf5ff;
+      border: 2.5px solid #8b5cf6;
+      box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.12);
+      color: #7c3aed;
+    }
+
+    /* Breakdown Box under Node 3 */
+    .breakdown-box {
+      position: absolute;
+      top: 230px;
+      left: 360px;
+      width: 205px;
+      background: #faf5ff;
+      border: 1.5px dashed #c084fc;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 5;
+      box-shadow: 0 4px 12px rgba(147, 51, 234, 0.04);
+    }
+
+    .b-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .b-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #ffffff;
+      border: 1px solid #e9d5ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7c3aed;
+      flex-shrink: 0;
+    }
+    .b-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #3b0764;
+    }
+    .b-sub {
+      font-size: 9px;
+      color: #6b21a8;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Stage 4: Skill Rows */
+    .row-card {
+      position: absolute;
+      height: 68px;
+      border-radius: 13px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03);
+      z-index: 5;
+    }
+
+    .skill-card-a {
+      top: 114px;
+      left: 605px;
+      width: 235px;
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+    }
+
+    .coproc-card-a {
+      top: 114px;
+      left: 875px;
+      width: 235px;
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+    }
+
+    .skill-card-b {
+      top: 198px;
+      left: 605px;
+      width: 235px;
+      background: #eff6ff;
+      border: 1.5px solid #93c5fd;
+    }
+
+    .coproc-card-b {
+      top: 198px;
+      left: 875px;
+      width: 235px;
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+    }
+
+    .skill-card-c {
+      top: 282px;
+      left: 605px;
+      width: 235px;
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+    }
+
+    .coproc-card-c {
+      top: 282px;
+      left: 875px;
+      width: 235px;
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+    }
+
+    .c-icon-bubble {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .c-text-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5px;
+      overflow: hidden;
+    }
+    .c-headline {
+      font-size: 11.5px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .c-subheadline {
+      font-size: 9.5px;
+      color: #64748b;
+      line-height: 1.3;
+    }
+
+    /* Quantum Callout Box */
+    .quantum-box {
+      position: absolute;
+      top: 366px;
+      left: 605px;
+      width: 505px;
+      height: 140px;
+      background: #fff1f2;
+      border: 1.5px dashed #f43f5e;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 12px;
+      z-index: 5;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.04);
+    }
+    .q-badge-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: #ffffff;
+      border: 1px solid #fecdd3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e11d48;
+      flex-shrink: 0;
+    }
+    .q-text-body {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .q-heading {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #9f1239;
+    }
+    .q-bullets {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .q-bullet-row {
+      font-size: 10px;
+      color: #4c0519;
+      line-height: 1.35;
+      display: flex;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    .qb { color: #e11d48; font-weight: bold; }
+
+    /* Stage 5: Output Container & Output Cards */
+    .stage5-container {
+      position: absolute;
+      top: 104px;
+      left: 1145px;
+      width: 265px;
+      height: 256px;
+      background: #fefce8;
+      border: 1.5px solid #fef08a;
+      border-radius: 16px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 5;
+      box-shadow: 0 4px 14px rgba(202, 138, 4, 0.05);
+    }
+
+    .out-card {
+      background: #ffffff;
+      border-radius: 11px;
+      padding: 9px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      border: 1.5px solid transparent;
+      height: 70px;
+    }
+    .out-card-1 { border-color: #86efac; }
+    .out-card-2 { border-color: #93c5fd; }
+    .out-card-3 { border-color: #fed7aa; }
+
+    .out-ico {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .out-ic-green { background: #f0fdf4; color: #16a34a; }
+    .out-ic-blue { background: #eff6ff; color: #2563eb; }
+    .out-ic-orange { background: #fff7ed; color: #ea580c; }
+
+    .out-tx {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .out-head {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .out-subtx {
+      font-size: 9.5px;
+      color: #64748b;
+      line-height: 1.25;
+    }
+
+    /* Legend Box */
+    .legend-card {
+      position: absolute;
+      top: 368px;
+      left: 1145px;
+      width: 265px;
+      height: 138px;
+      background: #ffffff;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      z-index: 5;
+    }
+    .leg-head {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #475569;
+    }
+    .leg-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 10.5px;
+      color: #334155;
+    }
+    .leg-solid-arrow {
+      width: 32px;
+      height: 2px;
+      background: #334155;
+      position: relative;
+    }
+    .leg-solid-arrow::after {
+      content: '';
+      position: absolute;
+      right: -2px;
+      top: -3px;
+      border-left: 5px solid #334155;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+    .leg-dashed-arrow {
+      width: 32px;
+      height: 0px;
+      border-top: 2px dashed #f43f5e;
+      position: relative;
+    }
+    .leg-dashed-arrow::after {
+      content: '';
+      position: absolute;
+      right: -2px;
+      top: -4px;
+      border-left: 5px solid #f43f5e;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+
+    /* Bottom Architecture Pillars Banner */
+    .pillars-strip {
+      position: absolute;
+      bottom: 22px;
+      left: 30px;
+      right: 30px;
+      height: 58px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 0 18px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      gap: 14px;
+    }
+
+    .p-col {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .p-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .p-tx {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .p-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .p-sub {
+      font-size: 9.5px;
+      color: #64748b;
+    }
+
+    /* Global Connector SVG Overlay */
+    .connector-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="diagram-canvas">
+
+    <!-- Column Headers -->
+    <div class="header-row">
+      <div class="col-hdr-1">
+        <div class="hdr-title c-green">1. Voice Trigger</div>
+        <div class="hdr-sub">Browser idle; listening via Hysteresis VAD</div>
+      </div>
+      <div class="col-hdr-2">
+        <div class="hdr-title c-blue">2. Voice Capture &amp; STT</div>
+        <div class="hdr-sub">Acoustic downsampling &amp; private Whisper STT</div>
+      </div>
+      <div class="col-hdr-3">
+        <div class="hdr-title c-purple">3. Intent &amp; Skill Routing</div>
+        <div class="hdr-sub">Extract intent &amp; entities to route to appropriate skill</div>
+      </div>
+      <div class="col-hdr-4">
+        <div class="hdr-title c-orange">4. Skill Execution &amp; Quantum Co-Processing</div>
+        <div class="hdr-sub">Skill processes request via RAG, function tools, and quantum circuits</div>
+      </div>
+      <div class="col-hdr-5">
+        <div class="hdr-title c-amber">5. Vocal &amp; Action Dispatch</div>
+        <div class="hdr-sub">Spoken neural audio &amp; real-time lead dispatch</div>
+      </div>
+    </div>
+
+    <!-- Perfect Geometric SVG Connectors -->
+    <svg class="connector-svg" viewBox="0 0 1440 780" fill="none">
+      <defs>
+        <!-- Standard Arrow Marker -->
+        <marker id="m-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#334155"/>
+        </marker>
+        <!-- Double Sided Arrow Marker Right -->
+        <marker id="m-arrow-r" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b"/>
+        </marker>
+        <!-- Double Sided Arrow Marker Left -->
+        <marker id="m-arrow-l" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#64748b"/>
+        </marker>
+        <!-- Quantum Pink Dashed Arrow Marker -->
+        <marker id="m-arrow-pink" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e11d48"/>
+        </marker>
+      </defs>
+
+      <!-- 1. Stage 1 to Stage 2: Center y=148. Left x=150, Right x=226 -->
+      <path d="M 150 148 L 222 148" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+
+      <!-- 2. Stage 2 down to Whisper circle: Center x=269. Top y=191, Bottom y=245 -->
+      <path d="M 269 191 L 269 241" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#m-arrow)" />
+
+      <!-- 3. Stage 2 to Stage 3: Center y=148. Left x=312, Right x=420 -->
+      <path d="M 312 148 L 416 148" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+
+      <!-- 4. Stage 3 down to Breakdown Box: Center x=463. Top y=191, Bottom y=230 -->
+      <path d="M 463 191 L 463 226" stroke="#7c3aed" stroke-width="2" marker-end="url(#m-arrow)" />
+
+      <!-- 5. Breakdown Box (right x=565, center y=305) Forking to Stage 4 Skill Cards (left x=605) -->
+      <!-- Branch A: to y=148 -->
+      <path d="M 565 270 C 585 270, 585 148, 601 148" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+      <!-- Branch B: to y=232 -->
+      <path d="M 565 305 C 585 305, 585 232, 601 232" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+      <!-- Branch C: to y=316 -->
+      <path d="M 565 340 C 585 340, 585 316, 601 316" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+
+      <!-- 6. Bidirectional Connectors inside Stage 4 (between Skill card and Co-processor card) -->
+      <!-- Row A: x=840 to x=875, y=148 -->
+      <path d="M 844 148 L 871 148" stroke="#64748b" stroke-width="2" marker-start="url(#m-arrow-l)" marker-end="url(#m-arrow-r)" />
+      <!-- Row B: x=840 to x=875, y=232 -->
+      <path d="M 844 232 L 871 232" stroke="#64748b" stroke-width="2" marker-start="url(#m-arrow-l)" marker-end="url(#m-arrow-r)" />
+      <!-- Row C: x=840 to x=875, y=316 -->
+      <path d="M 844 316 L 871 316" stroke="#64748b" stroke-width="2" marker-start="url(#m-arrow-l)" marker-end="url(#m-arrow-r)" />
+
+      <!-- 7. Connectors from Co-processor cards (right x=1110) into Stage 5 Container (left x=1145) -->
+      <!-- Row A to Output 1: y=148 -->
+      <path d="M 1110 148 L 1141 148" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+      <!-- Row B to Output 2: y=232 -->
+      <path d="M 1110 232 L 1141 232" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+      <!-- Row C to Output 3: y=316 -->
+      <path d="M 1110 316 L 1141 316" stroke="#334155" stroke-width="2" marker-end="url(#m-arrow)" />
+
+      <!-- 8. Quantum Box Upward Connectors (Dashed Rose Lines) -->
+      <!-- From top of Quantum Box (y=366) up to QAOA (bottom y=350, center x=992) -->
+      <path d="M 992 366 L 992 354" stroke="#e11d48" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#m-arrow-pink)" />
+      <!-- From top of Quantum Box up to PennyLane (bottom y=266, center x=992) -->
+      <!-- We draw a branch path going up through gap -->
+      <path d="M 848 366 L 848 266 L 871 266" stroke="#e11d48" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#m-arrow-pink)" />
+    </svg>
+
+    <!-- NODE 1: Voice Activity Trigger -->
+    <div class="circle-node node-1">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="22"></line>
+      </svg>
+    </div>
+    <div class="node-1-desc">
+      Hysteresis VAD detects speech onset (RMS &gt; 0.022) with noise floor shield
+    </div>
+
+    <!-- NODE 2: Audio Waveform -->
+    <div class="circle-node node-2">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 10v4"></path><path d="M6 6v12"></path><path d="M10 3v18"></path>
+        <path d="M14 8v8"></path><path d="M18 5v14"></path><path d="M22 10v4"></path>
+      </svg>
+    </div>
+
+    <!-- Whisper Subcard -->
+    <div class="sub-whisper-card">
+      <svg width="38" height="38" viewBox="0 0 24 24" fill="#0f766e">
+        <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1683a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4947zm-9.6647-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1448-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1683a.0757.0757 0 0 1-.071 0l-4.8303-2.7866A4.504 4.504 0 0 1 2.3408 7.8956zm16.0993 3.8558L12.5973 8.3829l2.0201-1.1683a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.4021-.6815zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.407 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3061 12.863l-2.02-1.1636a.0804.0804 0 0 1-.038-.0567V6.0748a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.7036 5.4597a.7948.7948 0 0 0-.3927.6814v6.7219zm1.0977-2.3655l2.6024-1.4998 2.6024 1.4998v2.9997l-2.6024 1.4998-2.6024-1.4998z"/>
+      </svg>
+    </div>
+    <div class="sub-whisper-label">
+      <div class="whisper-title">Faster-Whisper</div>
+      <div class="whisper-details">(small.en CUDA &lt;100ms)</div>
+    </div>
+
+    <!-- NODE 3: Intent & Command Routing -->
+    <div class="circle-node node-3">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-2.04z"></path>
+        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-2.04z"></path>
+      </svg>
+    </div>
+
+    <!-- Breakdown Card -->
+    <div class="breakdown-box">
+      <div class="b-item">
+        <div class="b-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line></svg>
+        </div>
+        <div>
+          <div class="b-title">Intent Recognition</div>
+          <div class="b-sub">Inquiry vs Booking vs Correction</div>
+        </div>
+      </div>
+      <div class="b-item">
+        <div class="b-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </div>
+        <div>
+          <div class="b-title">Entity Extraction</div>
+          <div class="b-sub">Name, Phone, Datetime, Room</div>
+        </div>
+      </div>
+      <div class="b-item">
+        <div class="b-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        </div>
+        <div>
+          <div class="b-title">Skill Dispatching</div>
+          <div class="b-sub">Route to RAG, Tools, or QPU</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAGE 4: Skills & Co-processors -->
+    <!-- Row A: Skill A -->
+    <div class="row-card skill-card-a">
+      <div class="c-icon-bubble" style="color: #16a34a;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #15803d;">A. Knowledge Base (RAG) Skill</div>
+        <div class="c-subheadline">Answers questions from uploaded policy docs</div>
+      </div>
+    </div>
+
+    <!-- Row A: Co-processor A -->
+    <div class="row-card coproc-card-a">
+      <div class="c-icon-bubble" style="color: #059669;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m10 15 5-3-5-3v6Z"></path></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #047857;">BM25 Keyword Retrieval</div>
+        <div class="c-subheadline">Multi-turn history expansion (0.05ms)</div>
+      </div>
+    </div>
+
+    <!-- Row B: Skill B -->
+    <div class="row-card skill-card-b">
+      <div class="c-icon-bubble" style="color: #2563eb;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #1d4ed8;">B. Lead Booking &amp; Calendar Skill</div>
+        <div class="c-subheadline">Executes save_booking &amp; update_booking</div>
+      </div>
+    </div>
+
+    <!-- Row B: Co-processor B -->
+    <div class="row-card coproc-card-b">
+      <div class="c-icon-bubble" style="color: #2563eb;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(90 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(150 12 12)"></ellipse></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #1e40af;">PennyLane VQC Resolver</div>
+        <div class="c-subheadline">Solves overlap QUBO; offers +1hr slots</div>
+      </div>
+    </div>
+
+    <!-- Row C: Skill C -->
+    <div class="row-card skill-card-c">
+      <div class="c-icon-bubble" style="color: #ea580c;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #c2410c;">C. Prompt Engineering Skill</div>
+        <div class="c-subheadline">Refines system prompt for voice persona</div>
+      </div>
+    </div>
+
+    <!-- Row C: Co-processor C -->
+    <div class="row-card coproc-card-c">
+      <div class="c-icon-bubble" style="color: #ea580c;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(45 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(135 12 12)"></ellipse></svg>
+      </div>
+      <div class="c-text-group">
+        <div class="c-headline" style="color: #9a3412;">IBM Qiskit QAOA Optimizer</div>
+        <div class="c-subheadline">QUBO selection + Redo fact verification</div>
+      </div>
+    </div>
+
+    <!-- Quantum Callout Box -->
+    <div class="quantum-box">
+      <div class="q-badge-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(30 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(90 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(150 12 12)"></ellipse></svg>
+      </div>
+      <div class="q-text-body">
+        <div class="q-heading">Quantum &amp; Quantum-Inspired Co-Processing Subsystems</div>
+        <ul class="q-bullets">
+          <li class="q-bullet-row">
+            <span class="qb">•</span>
+            <span><strong>QAOA QUBO Optimization:</strong> Formulates prompt candidate selection as a binary QUBO with one-hot constraint solved via IBM Qiskit StatevectorSampler (COBYLA).</span>
+          </li>
+          <li class="q-bullet-row">
+            <span class="qb">•</span>
+            <span><strong>PennyLane VQC Conflict Resolution:</strong> Models appointment overlaps as Maximum Independent Set graph; solves on simulator using 12 gradient descent steps.</span>
+          </li>
+          <li class="q-bullet-row">
+            <span class="qb">•</span>
+            <span><strong>Automated Redo Loop:</strong> Programmatic fact checker audits candidate against original prompt, guaranteeing 100% pricing and policy retention.</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- STAGE 5: Output Container -->
+    <div class="stage5-container">
+      <!-- Output 1 -->
+      <div class="out-card out-card-1">
+        <div class="out-ico out-ic-green">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+        </div>
+        <div class="out-tx">
+          <div class="out-head">Gapless Neural Audio</div>
+          <div class="out-subtx">Piper ONNX speech playback with 0ms prefetch &amp; barge-in</div>
+        </div>
+      </div>
+      <!-- Output 2 -->
+      <div class="out-card out-card-2">
+        <div class="out-ico out-ic-blue">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        </div>
+        <div class="out-tx">
+          <div class="out-head">Studio UI &amp; Transcripts</div>
+          <div class="out-subtx">Real-time SSE conversation text, waveforms &amp; call logging</div>
+        </div>
+      </div>
+      <!-- Output 3 -->
+      <div class="out-card out-card-3">
+        <div class="out-ico out-ic-orange">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        </div>
+        <div class="out-tx">
+          <div class="out-head">Webhook &amp; Calendar Push</div>
+          <div class="out-subtx">JSON to Zapier/Make + Google Calendar &amp; RFC 5545 ICS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend Box -->
+    <div class="legend-card">
+      <div class="leg-head">Legend</div>
+      <div class="leg-row">
+        <div class="leg-solid-arrow"></div>
+        <span>Data / Control Flow</span>
+      </div>
+      <div class="leg-row">
+        <div class="leg-dashed-arrow"></div>
+        <span>Quantum Optimization Flow</span>
+      </div>
+    </div>
+
+    <!-- Bottom Architecture Pillars Banner -->
+    <div class="pillars-strip">
+      <div class="p-col">
+        <div class="p-icon" style="background: #dcfce7; color: #16a34a;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div class="p-tx">
+          <span class="p-title">Zero-Cost &amp; Local</span>
+          <span class="p-sub">No GPU/phone bills; $0 to run</span>
+        </div>
+      </div>
+
+      <div class="p-col">
+        <div class="p-icon" style="background: #f3e8ff; color: #9333ea;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        </div>
+        <div class="p-tx">
+          <span class="p-title">Ultra-Low Latency</span>
+          <span class="p-sub">&lt;100ms STT · 0ms gapless TTS</span>
+        </div>
+      </div>
+
+      <div class="p-col">
+        <div class="p-icon" style="background: #dbeafe; color: #2563eb;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <div class="p-tx">
+          <span class="p-title">Secure Multi-Tenant</span>
+          <span class="p-sub">PBKDF2 (200k) + Session cookie</span>
+        </div>
+      </div>
+
+      <div class="p-col">
+        <div class="p-icon" style="background: #fef3c7; color: #d97706;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        </div>
+        <div class="p-tx">
+          <span class="p-title">Session Memory</span>
+          <span class="p-sub">Multi-turn context expansion</span>
+        </div>
+      </div>
+
+      <div class="p-col">
+        <div class="p-icon" style="background: #ffe4e6; color: #e11d48;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        </div>
+        <div class="p-tx">
+          <span class="p-title">Logging &amp; Analytics</span>
+          <span class="p-sub">Transcripts &amp; booking audits</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+# ── Virtual Environments ──────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Python Bytecode & Caches ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ── Secrets & Environment Config ───────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+certs/
+
+# ── Database (Runtime) ─────────────────────────────────────────────────────
+agents.db
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ── Temporary, Media & Test Audio ──────────────────────────────────────────
+*_backup.*
+*_dump*.txt
+*.tmp
+~$*
+test.wav
+*.wav
+*.mp3
+*.pcm
+
+# ── Logs & Scratch Scripts ─────────────────────────────────────────────────
+*.log
+qaoa_*.log
+fix_tail.py
+qaoa_reruns*.py
+
+# ── Benchmarks, Runs & Research Artifacts ──────────────────────────────────
+runs/
+research/results/
+research/generated/
+research/figures/
+research/data/
+graphify-out/
+
+# ── Bundles, Archives & Exports ────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*_bundle/
+final_journal_corrected_bundle/
+journal_contradictions_removed_bundle/
+
+# ── LaTeX Build Artifacts ──────────────────────────────────────────────────
+*.aux
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# ── Token Saver & IDE Extension Artifacts ──────────────────────────────────
+latestvsixfile/
+*.vsix
+node_modules/
+dist/
+build/
+.agents/ck/
+.agents/cgc/
+.agents/jevgraph/
+.crw/
+
+# ── OS & Editor Artifacts ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

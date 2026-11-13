@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enterprise System Architecture Specification — Voice Agent Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #f1f5f9;
+      --card-bg: #ffffff;
+      --border-main: #cbd5e1;
+      --text-head: #0f172a;
+      --text-body: #334155;
+      --text-muted: #64748b;
+      
+      /* Tier 1: Frontend (Sky / Cyan Blue) */
+      --t1-bg: #f0f9ff;
+      --t1-border: #0284c7;
+      --t1-header-bg: #0284c7;
+      --t1-chip-bg: #e0f2fe;
+      --t1-chip-border: #bae6fd;
+      --t1-chip-text: #0369a1;
+
+      /* Tier 2: Backend (Indigo / Royal Blue) */
+      --t2-bg: #eef2ff;
+      --t2-border: #6366f1;
+      --t2-header-bg: #4f46e5;
+      --t2-chip-bg: #e0e7ff;
+      --t2-chip-border: #c7d2fe;
+      --t2-chip-text: #3730a3;
+
+      /* Tier 3: Data Layer (Emerald / Forest Green) */
+      --t3-bg: #ecfdf5;
+      --t3-border: #10b981;
+      --t3-header-bg: #059669;
+      --t3-chip-bg: #d1fae5;
+      --t3-chip-border: #a7f3d0;
+      --t3-chip-text: #065f46;
+
+      /* Tier 4: Integrations (Amber / Warm Bronze) */
+      --t4-bg: #fffbeb;
+      --t4-border: #f59e0b;
+      --t4-header-bg: #d97706;
+      --t4-chip-bg: #fef3c7;
+      --t4-chip-border: #fde68a;
+      --t4-chip-text: #92400e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text-body);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 60px 16px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Document Header Bar */
+    .document-header {
+      width: 100%;
+      max-width: 1360px;
+      background: #ffffff;
+      border: 1px solid var(--border-main);
+      border-radius: 8px 8px 0 0;
+      padding: 20px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .header-left h1 {
+      font-size: 20.5px;
+      font-weight: 700;
+      color: var(--text-head);
+      letter-spacing: -0.3px;
+    }
+    .header-left p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .header-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .meta-tag {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 4px 9px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    /* Main Diagram Canvas: Balanced 36px Gap */
+    .canvas-container {
+      width: 100%;
+      max-width: 1360px;
+      background: #ffffff;
+      border: 1px solid var(--border-main);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 38px 24px 54px 24px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05);
+      position: relative;
+    }
+
+    /* 4-Column Grid with tightened balanced 28px gap */
+    .grid-tier {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Big Container Box */
+    .tier-container {
+      border-radius: 8px;
+      border: 2px solid;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.03);
+      background: #ffffff;
+    }
+    .tier-1 { border-color: var(--t1-border); background: var(--t1-bg); }
+    .tier-2 { border-color: var(--t2-border); background: var(--t2-bg); }
+    .tier-3 { border-color: var(--t3-border); background: var(--t3-bg); }
+    .tier-4 { border-color: var(--t4-border); background: var(--t4-bg); }
+
+    /* Big Container Header Banner */
+    .tier-banner {
+      padding: 13px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      color: #ffffff;
+    }
+    .tier-1 .tier-banner { background: var(--t1-header-bg); }
+    .tier-2 .tier-banner { background: var(--t2-header-bg); }
+    .tier-3 .tier-banner { background: var(--t3-header-bg); }
+    .tier-4 .tier-banner { background: var(--t4-header-bg); }
+
+    .tier-banner .b-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+    .tier-banner .b-sub {
+      font-size: 9.5px;
+      font-weight: 500;
+      opacity: 0.95;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Inner Body of Big Container with tightened 20px vertical gap */
+    .tier-body {
+      padding: 15px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex-grow: 1;
+    }
+
+    /* Nested Smaller Service Card */
+    .nested-service {
+      background: #ffffff;
+      border: 1px solid;
+      border-radius: 6px;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+      height: 234px;
+      justify-content: space-between;
+    }
+    .tier-1 .nested-service { border-color: #bae6fd; border-left: 4px solid var(--t1-border); }
+    .tier-2 .nested-service { border-color: #c7d2fe; border-left: 4px solid var(--t2-border); }
+    .tier-3 .nested-service { border-color: #a7f3d0; border-left: 4px solid var(--t3-border); }
+    .tier-4 .nested-service { border-color: #fde68a; border-left: 4px solid var(--t4-border); }
+
+    .service-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .service-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-head);
+      letter-spacing: -0.1px;
+    }
+    .service-badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+    .tier-1 .service-badge { background: var(--t1-chip-bg); color: var(--t1-chip-text); border: 1px solid var(--t1-chip-border); }
+    .tier-2 .service-badge { background: var(--t2-chip-bg); color: var(--t2-chip-text); border: 1px solid var(--t2-chip-border); }
+    .tier-3 .service-badge { background: var(--t3-chip-bg); color: var(--t3-chip-text); border: 1px solid var(--t3-chip-border); }
+    .tier-4 .service-badge { background: var(--t4-chip-bg); color: var(--t4-chip-text); border: 1px solid var(--t4-chip-border); }
+
+    .service-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    /* Sub-Module List Inside Smaller Service */
+    .submodule-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 7px;
+    }
+    .sub-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 3px;
+      padding: 5px 7px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-body);
+    }
+    .sub-item .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .tier-1 .dot { background: var(--t1-border); }
+    .tier-2 .dot { background: var(--t2-border); }
+    .tier-3 .dot { background: var(--t3-border); }
+    .tier-4 .dot { background: var(--t4-border); }
+
+    .sub-item .label {
+      font-weight: 600;
+      color: var(--text-head);
+    }
+
+    /* Bottom Annotation Row */
+    .tier-note {
+      margin-top: 4px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 10px;
+      line-height: 1.35;
+      color: var(--text-muted);
+      height: 56px;
+      display: flex;
+      align-items: center;
+    }
+    .tier-note strong {
+      color: var(--text-head);
+      margin-right: 4px;
+    }
+
+    /* High Z-Index SVG Layer for continuous clean arrows */
+    svg#connector-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Architecture Specification Table */
+    .details-table-wrap {
+      margin-top: 48px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 24px;
+    }
+    .details-table-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-head);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+    }
+    .details-table th, .details-table td {
+      border: 1px solid #e2e8f0;
+      padding: 9px 12px;
+      text-align: left;
+    }
+    .details-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .details-table td {
+      color: var(--text-body);
+    }
+    .details-table code {
+      font-family: 'JetBrains Mono', monospace;
+      color: #0369a1;
+      background: #f0f9ff;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10.5px;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #ffffff;
+      }
+      .document-header, .canvas-container {
+        border: none;
+        box-shadow: none;
+        max-width: 100%;
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Formal Document Header -->
+  <div class="document-header">
+    <div class="header-left">
+      <h1>Voice Agent System Architecture</h1>
+      <p>Modular Layered Telephony &amp; Multi-Agent Intelligence Infrastructure</p>
+    </div>
+    <div class="header-meta">
+      <div class="meta-tag">STATUS: PRODUCTION</div>
+      <div class="meta-tag">DOC-ID: ARCH-V6-BALANCED</div>
+      <div class="meta-tag">SECURITY: RBAC / STRICT 1:1</div>
+    </div>
+  </div>
+
+  <!-- Diagram Canvas -->
+  <div class="canvas-container" id="canvas-container">
+    
+    <!-- SVG Vector Connection Layer with Unbroken Arrows and Overhead Labels -->
+    <svg id="connector-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Standard Dark Slate Arrowhead -->
+        <marker id="arr-slate" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e293b" />
+        </marker>
+        <!-- Blue Arrowhead -->
+        <marker id="arr-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#0284c7" />
+        </marker>
+        <!-- Indigo Arrowhead (Forward) -->
+        <marker id="arr-indigo" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4338ca" />
+        </marker>
+        <!-- Indigo Arrowhead (Reverse) -->
+        <marker id="arr-indigo-rev" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#4338ca" />
+        </marker>
+        <!-- Emerald Arrowhead -->
+        <marker id="arr-emerald" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#059669" />
+        </marker>
+        <!-- Amber Arrowhead -->
+        <marker id="arr-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706" />
+        </marker>
+      </defs>
+    </svg>
+
+    <div class="grid-tier">
+
+      <!-- ==============================================
+           BIG CONTAINER 1: FRONTEND SERVICES (SKY BLUE)
+      ============================================== -->
+      <div class="tier-container tier-1" id="box-frontend">
+        <div class="tier-banner" id="banner-t1">
+          <span class="b-title">Frontend Services</span>
+          <span class="b-sub">Tier 1 &bull; Client Presentation</span>
+        </div>
+        <div class="tier-body">
+          <!-- Nested Smaller Service 1 -->
+          <div class="nested-service" id="svc-ui">
+            <div>
+              <div class="service-top">
+                <span class="service-title">Voice Studio Web UI</span>
+                <span class="service-badge">HTML5 / CSS / ES6</span>
+              </div>
+              <div class="service-desc">Single-page responsive dashboard for agent setup, testing, and call logs.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Dashboard:</span> Live metrics &amp; history</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Agent Editor:</span> System prompt &amp; tools</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Telephony Tab:</span> 1:1 phone routing</span></div>
+            </div>
+          </div>
+
+          <!-- Nested Smaller Service 2 -->
+          <div class="nested-service" id="svc-audio">
+            <div>
+              <div class="service-top">
+                <span class="service-title">Client Audio Engine</span>
+                <span class="service-badge">Web Audio API</span>
+              </div>
+              <div class="service-desc">Browser-side mic stream capture, energy VAD, and playback queue.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Capture:</span> 48kHz mic to 16kHz PCM</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Browser VAD:</span> Audio activity trigger</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Buffer Queue:</span> Duplex voice playback</span></div>
+            </div>
+          </div>
+
+          <div class="tier-note">
+            <span><strong>Note:</strong> Client operates over low-latency duplex WebSocket channel with barge-in support.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           BIG CONTAINER 2: BACKEND SERVICES (INDIGO)
+      ============================================== -->
+      <div class="tier-container tier-2" id="box-backend">
+        <div class="tier-banner" id="banner-t2">
+          <span class="b-title">Backend Services</span>
+          <span class="b-sub">Tier 2 &bull; Application &amp; Speech Core</span>
+        </div>
+        <div class="tier-body">
+          <!-- Nested Smaller Service 1 -->
+          <div class="nested-service" id="svc-core">
+            <div>
+              <div class="service-top">
+                <span class="service-title">FastAPI Application Core</span>
+                <span class="service-badge">FastAPI / Uvicorn</span>
+              </div>
+              <div class="service-desc">REST API gateway, session auth, RBAC policies, and guardrails.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Auth &amp; RBAC:</span> Session tokens &amp; roles</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Tool Registry:</span> Function calling tools</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Guardrails:</span> PII masking &amp; calendar check</span></div>
+            </div>
+          </div>
+
+          <!-- Nested Smaller Service 2 -->
+          <div class="nested-service" id="svc-speech">
+            <div>
+              <div class="service-top">
+                <span class="service-title">Telephony &amp; Speech Loop</span>
+                <span class="service-badge">Audioop / Whisper</span>
+              </div>
+              <div class="service-desc">Bi-directional μ-law transcoding, STT transcription, and TTS speech synthesis.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Transcoding:</span> μ-law 8k &harr; 16k PCM</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Whisper STT:</span> CUDA Faster-Whisper</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">TTS Synthesis:</span> Offline pyttsx3 / Edge</span></div>
+            </div>
+          </div>
+
+          <div class="tier-note">
+            <span><strong>Note:</strong> Unified voice engine shared by browser and PSTN calls.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           BIG CONTAINER 3: DATA LAYER (EMERALD)
+      ============================================== -->
+      <div class="tier-container tier-3" id="box-data">
+        <div class="tier-banner" id="banner-t3">
+          <span class="b-title">Data Layer</span>
+          <span class="b-sub">Tier 3 &bull; Persistence &amp; Indexing</span>
+        </div>
+        <div class="tier-body">
+          <!-- Nested Smaller Service 1 -->
+          <div class="nested-service" id="svc-db">
+            <div>
+              <div class="service-top">
+                <span class="service-title">SQLite Relational Database</span>
+                <span class="service-badge">SQLite (WAL Mode)</span>
+              </div>
+              <div class="service-desc">ACID transaction store for agents, users, call journals, and routing.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Entities:</span> agents, users, members</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Call Store:</span> calls (transcripts, turns)</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Routing:</span> 1:1 twilio_phone_routes</span></div>
+            </div>
+          </div>
+
+          <!-- Nested Smaller Service 2 -->
+          <div class="nested-service" id="svc-bm25">
+            <div>
+              <div class="service-top">
+                <span class="service-title">BM25 Retrieval &amp; Outbox</span>
+                <span class="service-badge">BM25 / Outbox Queue</span>
+              </div>
+              <div class="service-desc">In-memory lexical RAG retrieval index and reliable delivery queue.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Inverted Index:</span> Per-agent token index</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Chunks:</span> 700-char overlapping text</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Outbox:</span> Transactional webhook sync</span></div>
+            </div>
+          </div>
+
+          <div class="tier-note">
+            <span><strong>Note:</strong> Strict unique constraint prevents multiple agents sharing the same phone route.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           BIG CONTAINER 4: INTEGRATIONS & EXTERNAL (AMBER)
+      ============================================== -->
+      <div class="tier-container tier-4" id="box-integrations">
+        <div class="tier-banner" id="banner-t4">
+          <span class="b-title">Integrations &amp; External</span>
+          <span class="b-sub">Tier 4 &bull; Telephony &amp; Cloud APIs</span>
+        </div>
+        <div class="tier-body">
+          <!-- Nested Smaller Service 1 -->
+          <div class="nested-service" id="svc-twilio">
+            <div>
+              <div class="service-top">
+                <span class="service-title">Twilio Voice Telephony</span>
+                <span class="service-badge">TwiML / MediaStream</span>
+              </div>
+              <div class="service-desc">Carrier PSTN gateway for real phone numbers and real-time audio.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Inbound:</span> Webhook &lt;Stream&gt; connect</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Media Stream:</span> 20ms bidirectional WS</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Outbound:</span> REST calls.create API</span></div>
+            </div>
+          </div>
+
+          <!-- Nested Smaller Service 2 -->
+          <div class="nested-service" id="svc-cloud">
+            <div>
+              <div class="service-top">
+                <span class="service-title">External LLMs &amp; APIs</span>
+                <span class="service-badge">Ollama / Groq / Google</span>
+              </div>
+              <div class="service-desc">Language model backends and business productivity integrations.</div>
+            </div>
+            <div class="submodule-list">
+              <div class="sub-item"><div class="dot"></div><span><span class="label">LLMs:</span> Ollama (local) / Groq / Gemini</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Google Sync:</span> Calendar &amp; Sheets API</span></div>
+              <div class="sub-item"><div class="dot"></div><span><span class="label">Tunnel:</span> ngrok HTTPS/WSS ingress</span></div>
+            </div>
+          </div>
+
+          <div class="tier-note">
+            <span><strong>Note:</strong> Secure public ngrok tunnel proxies external PSTN webhooks into local server.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Formal Architecture Table -->
+    <div class="details-table-wrap">
+      <div class="details-table-title">System Tier Specifications &amp; Interfaces</div>
+      <table class="details-table">
+        <thead>
+          <tr>
+            <th style="width: 20%;">Tier Category</th>
+            <th style="width: 25%;">Primary Components</th>
+            <th style="width: 30%;">Protocols &amp; Interfaces</th>
+            <th style="width: 25%;">Responsibilities</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Frontend Services</strong></td>
+            <td>Voice Agent Studio, Audio Stream Engine</td>
+            <td><code>HTTP/1.1</code>, <code>WSS (WebSocket)</code>, Web Audio API</td>
+            <td>User interactions, dashboard reporting, client mic input &amp; audio rendering.</td>
+          </tr>
+          <tr>
+            <td><strong>2. Backend Services</strong></td>
+            <td>FastAPI Server, Speech Processing Pipeline</td>
+            <td><code>ASGI / Uvicorn</code>, Faster-Whisper, pyttsx3, audioop</td>
+            <td>Call routing, Turn-taking VAD, STT transcription, Guardrail compliance.</td>
+          </tr>
+          <tr>
+            <td><strong>3. Data Layer</strong></td>
+            <td>SQLite DB, BM25 Index, Outbox Queue</td>
+            <td>SQLite3 with WAL mode, In-Memory Inverted Index</td>
+            <td>Relational persistence, RAG knowledge chunking, 1:1 agent phone assignment.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Integrations</strong></td>
+            <td>Twilio PSTN, External LLMs, Google Workspace</td>
+            <td>Twilio REST, TwiML, Groq API, Google OAuth/Service Account</td>
+            <td>Global PSTN dialing, high-speed LLM generation, Calendar &amp; Sheet automation.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // Clean Unobstructed Arrow Renderer: Overhead Floating Text, Zero Opaque Box Blockage
+    function renderConnectors() {
+      const container = document.getElementById('canvas-container');
+      const svg = document.getElementById('connector-svg');
+      if (!container || !svg) return;
+
+      const cRect = container.getBoundingClientRect();
+
+      function getBox(id) {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          left: r.left - cRect.left,
+          right: r.right - cRect.left,
+          top: r.top - cRect.top,
+          bottom: r.bottom - cRect.top,
+          centerX: (r.left + r.right) / 2 - cRect.left,
+          centerY: (r.top + r.bottom) / 2 - cRect.top,
+        };
+      }
+
+      const svcUI = getBox('svc-ui');
+      const svcAudio = getBox('svc-audio');
+
+      const svcCore = getBox('svc-core');
+      const svcSpeech = getBox('svc-speech');
+
+      const svcDB = getBox('svc-db');
+      const svcBM25 = getBox('svc-bm25');
+
+      const svcTwilio = getBox('svc-twilio');
+      const svcCloud = getBox('svc-cloud');
+
+      const boxFrontend = getBox('box-frontend');
+      const boxIntegrations = getBox('box-integrations');
+
+      if (!svcUI || !svcCore || !svcDB || !svcTwilio) return;
+
+      let pathsHtml = svg.querySelector('defs').outerHTML;
+
+      function getMarker(color) {
+        if (color === '#1e293b' || color === '#334155') return 'arr-slate';
+        if (color === '#0284c7') return 'arr-blue';
+        if (color === '#4338ca' || color === '#6366f1') return 'arr-indigo';
+        if (color === '#059669' || color === '#10b981') return 'arr-emerald';
+        if (color === '#d97706' || color === '#f59e0b') return 'arr-amber';
+        return 'arr-slate';
+      }
+
+      // Horizontal Arrow: Line is 100% visible; pill badge floats 4px ABOVE the line
+      function drawHArrow(x1, x2, y, labelText, color, isDashed = false, isBi = false) {
+        const textLen = labelText.length;
+        const badgeW = Math.max(textLen * 6.2 + 10, 46);
+        const badgeH = 14;
+        const midX = (x1 + x2) / 2;
+        const badgeY = y - 18; // 4px clearance above the line (y-18 to y-4)
+
+        const dashAttr = isDashed ? 'stroke-dasharray="4,4"' : '';
+        const markerStart = isBi ? 'marker-start="url(#arr-indigo-rev)"' : '';
+        const markerEnd = `marker-end="url(#${getMarker(color)})"`;
+
+        const startX = isBi ? (x1 + 6) : x1;
+        const endX = x1 < x2 ? (x2 - 3) : (x2 + 3);
+
+        return `
+          <line x1="${startX}" y1="${y}" 
+                x2="${endX}" y2="${y}" 
+                stroke="${color}" stroke-width="2" ${dashAttr} 
+                ${markerStart} ${markerEnd} />
+          <g>
+            <rect x="${midX - badgeW/2}" y="${badgeY}" width="${badgeW}" height="${badgeH}" rx="3" 
+                  fill="#ffffff" stroke="${color}" stroke-width="1" />
+            <text x="${midX}" y="${badgeY + 10}" fill="${color}" font-size="7.5" font-weight="700" 
+                  font-family="'JetBrains Mono', monospace" text-anchor="middle" letter-spacing="0.2px">${labelText}</text>
+          </g>
+        `;
+      }
+
+      // Vertical Arrow: Line is 100% visible; pill badge floats 7px to the RIGHT of line
+      function drawVArrow(x, y1, y2, labelText, color, isDashed = false) {
+        const textLen = labelText.length;
+        const badgeW = Math.max(textLen * 6.2 + 8, 42);
+        const badgeH = 14;
+        const midY = (y1 + y2) / 2;
+        const badgeX = x + 7;
+        const badgeY = midY - 7;
+
+        const dashAttr = isDashed ? 'stroke-dasharray="4,4"' : '';
+        const markerEnd = `marker-end="url(#${getMarker(color)})"`;
+
+        return `
+          <line x1="${x}" y1="${y1}" 
+                x2="${x}" y2="${y2 - 3}" 
+                stroke="${color}" stroke-width="2" ${dashAttr} 
+                ${markerEnd} />
+          <g>
+            <rect x="${badgeX}" y="${badgeY}" width="${badgeW}" height="${badgeH}" rx="3" 
+                  fill="#ffffff" stroke="${color}" stroke-width="1" />
+            <text x="${badgeX + badgeW/2}" y="${badgeY + 10}" fill="${color}" font-size="7.5" font-weight="700" 
+                  font-family="'JetBrains Mono', monospace" text-anchor="middle" letter-spacing="0.2px">${labelText}</text>
+          </g>
+        `;
+      }
+
+      // 1. VERTICAL FLOWS (INSIDE TIERS)
+      // Tier 1: UI -> Audio Engine
+      pathsHtml += drawVArrow(svcUI.centerX, svcUI.bottom, svcAudio.top, "SESSION", "#0284c7");
+
+      // Tier 2: Core -> Speech Loop
+      pathsHtml += drawVArrow(svcCore.centerX, svcCore.bottom, svcSpeech.top, "PIPELINE", "#4338ca");
+
+      // Tier 3: DB -> BM25 Index Store
+      pathsHtml += drawVArrow(svcDB.centerX, svcDB.bottom, svcBM25.top, "CHUNKS", "#059669");
+
+      // Tier 4: Twilio -> External LLMs
+      pathsHtml += drawVArrow(svcTwilio.centerX, svcTwilio.bottom, svcCloud.top, "BRIDGE", "#d97706", true);
+
+      // 2. HORIZONTAL INTER-TIER CONNECTORS
+      // Row 1 Flows
+      const yRow1 = svcUI.centerY;
+
+      // Flow A: UI ---> Core (REST API)
+      pathsHtml += drawHArrow(svcUI.right, svcCore.left, yRow1, "REST API", "#1e293b");
+
+      // Flow B: Core ---> DB (SQL Write / WAL)
+      pathsHtml += drawHArrow(svcCore.right, svcDB.left, yRow1, "SQL / WAL", "#1e293b");
+
+      // Flow C: DB ---> Twilio (1:1 Phone Route Binding)
+      pathsHtml += drawHArrow(svcDB.right, svcTwilio.left, yRow1, "1:1 ROUTE", "#d97706");
+
+      // Row 2 Flows
+      const yRow2 = svcAudio.centerY;
+
+      // Flow D: Audio Engine <---> Speech Loop (Duplex WSS Stream)
+      pathsHtml += drawHArrow(svcAudio.right, svcSpeech.left, yRow2, "WSS AUDIO", "#4338ca", true, true);
+
+      // Flow E: BM25 ---> Core (Context RAG Injection, pointing left into speech loop)
+      pathsHtml += drawHArrow(svcBM25.left, svcSpeech.right, yRow2, "BM25 RAG", "#059669");
+
+      // Flow F: BM25 Outbox ---> External Cloud APIs (Transactional sync)
+      pathsHtml += drawHArrow(svcBM25.right, svcCloud.left, yRow2, "OUTBOX SYNC", "#d97706", true);
+
+      // 3. BOTTOM CARRIER LOOP
+      const loopY = boxFrontend.bottom + 22;
+      pathsHtml += `
+        <path d="M ${boxIntegrations.centerX} ${boxIntegrations.bottom} 
+                 L ${boxIntegrations.centerX} ${loopY} 
+                 L ${boxFrontend.centerX} ${loopY} 
+                 L ${boxFrontend.centerX} ${boxFrontend.bottom + 6}" 
+              fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4,4" 
+              marker-end="url(#arr-amber)" />
+      `;
+      const loopMidX = (boxIntegrations.centerX + boxFrontend.centerX) / 2;
+      const loopBadgeW = 210;
+      const loopBadgeH = 14;
+      const loopBadgeY = loopY - 18;
+      pathsHtml += `
+        <g>
+          <rect x="${loopMidX - loopBadgeW/2}" y="${loopBadgeY}" width="${loopBadgeW}" height="${loopBadgeH}" rx="3" 
+                fill="#ffffff" stroke="#d97706" stroke-width="1" />
+          <text x="${loopMidX}" y="${loopBadgeY + 10}" fill="#d97706" font-size="7.5" font-weight="700" 
+                font-family="'JetBrains Mono', monospace" text-anchor="middle" letter-spacing="0.3px">PSTN CARRIER MEDIA STREAM RETURN</text>
+        </g>
+      `;
+
+      svg.innerHTML = pathsHtml;
+    }
+
+    window.addEventListener('load', renderConnectors);
+    window.addEventListener('resize', renderConnectors);
+    setTimeout(renderConnectors, 80);
+    setTimeout(renderConnectors, 300);
+  </script>
+
+</body>
+</html>

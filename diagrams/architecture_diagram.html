@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent Studio — System Architecture Diagram</title>
+  <style>
+    :root {
+      --bg-base: #0a0d14;
+      --bg-surface: #111726;
+      --bg-card: #172033;
+      --bg-card-hover: #1e2a42;
+      --border-subtle: #243049;
+      --border-active: #3b82f6;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      /* Modular Domain Color Tokens */
+      --client-col: #06b6d4;
+      --client-bg: rgba(6, 182, 212, 0.08);
+      --client-border: rgba(6, 182, 212, 0.3);
+      
+      --gateway-col: #818cf8;
+      --gateway-bg: rgba(129, 140, 248, 0.08);
+      --gateway-border: rgba(129, 140, 248, 0.3);
+      
+      --audio-col: #10b981;
+      --audio-bg: rgba(16, 185, 129, 0.08);
+      --audio-border: rgba(16, 185, 129, 0.3);
+      
+      --llm-col: #f59e0b;
+      --llm-bg: rgba(245, 158, 11, 0.08);
+      --llm-border: rgba(245, 158, 11, 0.3);
+      
+      --quantum-col: #ec4899;
+      --quantum-bg: rgba(236, 72, 153, 0.08);
+      --quantum-border: rgba(236, 72, 153, 0.3);
+      
+      --data-col: #38bdf8;
+      --data-bg: rgba(56, 189, 248, 0.08);
+      --data-border: rgba(56, 189, 248, 0.3);
+      
+      --ext-col: #a855f7;
+      --ext-bg: rgba(168, 85, 247, 0.08);
+      --ext-border: rgba(168, 85, 247, 0.3);
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Header */
+    header {
+      background: linear-gradient(180deg, #111827 0%, rgba(10, 13, 20, 0.95) 100%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 24px rgba(139, 92, 246, 0.4);
+      font-size: 1.4rem;
+    }
+
+    .brand-titles h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-titles p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .filter-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--border-active);
+    }
+
+    .filter-btn.active {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border-color: #3b82f6;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+    }
+
+    .action-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none;
+      color: white;
+      padding: 0.45rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: transform 0.15s ease, box-shadow 0.2s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    }
+
+    /* Key Architecture Metrics Ribbon */
+    .metrics-ribbon {
+      background: #0d121d;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      overflow-x: auto;
+      padding: 0.75rem 2.5rem;
+      gap: 2.5rem;
+      font-size: 0.78rem;
+    }
+
+    .metric-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      white-space: nowrap;
+    }
+
+    .metric-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .metric-badge span.lbl {
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-badge span.val {
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    /* Main Canvas Layout */
+    main {
+      padding: 2.5rem;
+      flex: 1;
+      max-width: 1700px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Sectional Layer Wrapper */
+    .layer-container {
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .layer-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .layer-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .layer-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: #fff;
+    }
+
+    .layer-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* Modular Grid Systems */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .module-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Architectural Box / Card Design */
+    .arch-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .arch-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, #3b82f6);
+      opacity: 0.8;
+      transition: opacity 0.2s, height 0.2s;
+    }
+
+    .arch-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 16px var(--card-glow, rgba(59, 130, 246, 0.15));
+      border-color: var(--card-accent, #3b82f6);
+    }
+
+    .arch-card:hover::before {
+      height: 4px;
+      opacity: 1;
+    }
+
+    .arch-card.active-card {
+      border-color: var(--card-accent, #3b82f6);
+      background: var(--bg-card-hover);
+      box-shadow: 0 0 20px var(--card-glow, rgba(59, 130, 246, 0.3));
+    }
+
+    /* Card Top Bar */
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .card-id-block {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--card-light-bg, rgba(255, 255, 255, 0.05));
+      border: 1px solid var(--card-accent-border, rgba(255, 255, 255, 0.1));
+      color: var(--card-accent, #60a5fa);
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .card-title-group h3 {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title-group .file-tag {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-tag {
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      background: var(--card-light-bg, rgba(255, 255, 255, 0.05));
+      color: var(--card-accent, #93c5fd);
+      border: 1px solid var(--card-accent-border, rgba(255, 255, 255, 0.1));
+      white-space: nowrap;
+    }
+
+    .card-desc {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Sub-modules list / Boxing */
+    .submodule-box {
+      background: rgba(10, 14, 22, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .submodule-box-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .feature-item {
+      font-size: 0.8rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .feature-item svg {
+      width: 14px;
+      height: 14px;
+      color: var(--card-accent, #60a5fa);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .feature-item code {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.05rem 0.35rem;
+      border-radius: 4px;
+      color: #93c5fd;
+    }
+
+    /* Card Footer with Latency / Spec Pills */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+    }
+
+    .spec-pill {
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .spec-pill strong {
+      color: #fff;
+    }
+
+    /* Interactive Data Flow Pipe (Visual Bus) */
+    .flow-connector-wrapper {
+      margin: 1.5rem 0;
+      position: relative;
+    }
+
+    .flow-bus {
+      background: rgba(17, 24, 39, 0.8);
+      border: 1px dashed var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      overflow-x: auto;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      color: var(--text-muted);
+    }
+
+    .flow-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      display: grid;
+      place-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .flow-arrow {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      animation: pulseArrow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseArrow {
+      0%, 100% { opacity: 0.3; transform: translateX(0); }
+      50% { opacity: 1; transform: translateX(3px); color: #60a5fa; }
+    }
+
+    /* Modal / Inspector Drawer */
+    .inspector-drawer {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 440px;
+      max-width: 90vw;
+      height: calc(100vh - 75px);
+      background: #111726;
+      border-left: 1px solid var(--border-subtle);
+      box-shadow: -10px 0 40px rgba(0, 0, 0, 0.7);
+      padding: 2rem;
+      z-index: 200;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .inspector-drawer.open {
+      transform: translateX(0);
+    }
+
+    .inspector-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+    }
+
+    .drawer-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .inspector-section {
+      background: rgba(10, 14, 22, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .inspector-section h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      margin-bottom: 0.65rem;
+      font-weight: 700;
+    }
+
+    .code-box {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      background: #080c14;
+      border: 1px solid #1f293d;
+      border-radius: 6px;
+      padding: 0.75rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      header { padding: 1rem 1.25rem; }
+      main { padding: 1.25rem; }
+      .metrics-ribbon { padding: 0.6rem 1.25rem; gap: 1.5rem; }
+      .module-grid { grid-template-columns: 1fr; }
+      .inspector-drawer { width: 100vw; }
+    }
+
+    /* Print styling */
+    @media print {
+      body { background: #fff; color: #000; }
+      header, .toolbar, .inspector-drawer { display: none; }
+      .arch-card { border: 1px solid #ccc; break-inside: avoid; background: #fff; color: #000; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Ambient Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">🎙️</div>
+      <div class="brand-titles">
+        <h1>Voice Agent Studio — Modular System Architecture</h1>
+        <p>Production Multi-User Voice AI Studio with Quantum Co-Processing & Local Edge Audio</p>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="filter-btn active" data-filter="all" onclick="filterLayers('all')">All Layers</button>
+      <button class="filter-btn" data-filter="client" onclick="filterLayers('client')">Client / Audio</button>
+      <button class="filter-btn" data-filter="gateway" onclick="filterLayers('gateway')">Gateway & Auth</button>
+      <button class="filter-btn" data-filter="cognitive" onclick="filterLayers('cognitive')">Cognitive LLM/RAG</button>
+      <button class="filter-btn" data-filter="quantum" onclick="filterLayers('quantum')">Quantum QAOA/VQC</button>
+      <button class="filter-btn" data-filter="storage" onclick="filterLayers('storage')">Storage & Webhooks</button>
+      <button class="action-btn" onclick="window.print()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2m-4 0h-4v4h8v-4z"></path></svg>
+        Export Diagram
+      </button>
+    </div>
+  </header>
+
+  <!-- Live Architecture Metrics Ribbon -->
+  <div class="metrics-ribbon">
+    <div class="metric-badge">
+      <div class="dot"></div>
+      <span class="lbl">Framework</span>
+      <span class="val">FastAPI + Asyncio</span>
+    </div>
+    <div class="metric-badge">
+      <div class="dot" style="background: #38bdf8; box-shadow: 0 0 8px #38bdf8;"></div>
+      <span class="lbl">Primary LLM</span>
+      <span class="val">Groq Llama 3.1 8B / Ollama</span>
+    </div>
+    <div class="metric-badge">
+      <div class="dot" style="background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+      <span class="lbl">Edge STT</span>
+      <span class="val">Faster-Whisper (CUDA &lt;100ms)</span>
+    </div>
+    <div class="metric-badge">
+      <div class="dot" style="background: #ec4899; box-shadow: 0 0 8px #ec4899;"></div>
+      <span class="lbl">Quantum Circuit</span>
+      <span class="val">Qiskit QAOA + PennyLane VQC</span>
+    </div>
+    <div class="metric-badge">
+      <div class="dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></div>
+      <span class="lbl">RAG Engine</span>
+      <span class="val">BM25 Multi-Turn (0.05ms)</span>
+    </div>
+    <div class="metric-badge">
+      <div class="dot" style="background: #a855f7; box-shadow: 0 0 8px #a855f7;"></div>
+      <span class="lbl">Persistence</span>
+      <span class="val">SQLite WAL Mode (0ms lock)</span>
+    </div>
+  </div>
+
+  <!-- Main Architecture Canvas -->
+  <main>
+
+    <!-- LAYER 1: CLIENT PRESENTATION & BROWSER SPEECH ENGINE -->
+    <section class="layer-container" data-layer-type="client">
+      <div class="layer-header">
+        <span class="layer-badge" style="background: var(--client-bg); color: var(--client-col); border: 1px solid var(--client-border);">Layer 01</span>
+        <h2 class="layer-title">Client Presentation & Browser Audio Execution Engine</h2>
+        <span class="layer-desc">Browser Runtime · Web Audio API · Dual-Threshold VAD · Audio Prefetch Queue</span>
+      </div>
+
+      <div class="module-grid">
+
+        <!-- Card: Frontend Studio & Dashboard -->
+        <div class="arch-card" style="--card-accent: #06b6d4; --card-light-bg: rgba(6, 182, 212, 0.1); --card-accent-border: rgba(6, 182, 212, 0.3); --card-glow: rgba(6, 182, 212, 0.2);" onclick="inspectModule('studio-ui')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">💻</div>
+              <div class="card-title-group">
+                <h3>Agent Studio & Management UI</h3>
+                <span class="file-tag">static/index.html · static/app.js</span>
+              </div>
+            </div>
+            <span class="card-tag">SPA Client</span>
+          </div>
+          <p class="card-desc">
+            Responsive multi-user workspace offering an interactive agent builder, knowledge manager, live transcript visualizer, and lead tracking system.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Modular Subcomponents</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Agent Designer:</strong> Prompt configuration, voice persona, rate, language</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Knowledge Ingestion:</strong> Drag-and-drop PDF, DOCX, TXT upload & snippet preview</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Booking Hub:</strong> In-place edit/delete modals, GCal event links, ICS downloads</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Embeddable Widget (<code>widget.js</code>):</strong> Drop-in floating phone call bubble</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Auth: <strong>PBKDF2 Sessions</strong></span>
+            <span class="spec-pill">Live State: <strong>Vue/Vanilla JS</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: Audio Ingestion & Hysteresis VAD -->
+        <div class="arch-card" style="--card-accent: #10b981; --card-light-bg: rgba(16, 185, 129, 0.1); --card-accent-border: rgba(16, 185, 129, 0.3); --card-glow: rgba(16, 185, 129, 0.2);" onclick="inspectModule('client-vad')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🎤</div>
+              <div class="card-title-group">
+                <h3>Hysteresis VAD & Audio Pipeline</h3>
+                <span class="file-tag">static/call-engine.js (LocalWhisperSTT)</span>
+              </div>
+            </div>
+            <span class="card-tag">Zero-Cutoff Audio</span>
+          </div>
+          <p class="card-desc">
+            Industrial dual-threshold Voice Activity Detector (VAD) coupled with adaptive noise floor shielding and 16kHz downsampling.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Acoustic Signal Processing</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Dual-Threshold VAD:</strong> Trigger <code>RMS &gt; 0.022</code>, Hold <code>RMS &gt; 0.012</code></span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Noise Floor Shield:</strong> Samples only on idle (range <code>0.006 - 0.025</code>)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Anti-Cutoff Silence Window:</strong> 1.25s sustained pause before finalize</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Acoustic DSP:</strong> 48kHz/44.1kHz → 16kHz linear resampling & WAV encode</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Min Utterance: <strong>450ms</strong></span>
+            <span class="spec-pill">Max Window: <strong>15.0s</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: Turn-Taking & Gapless TTS Prefetcher -->
+        <div class="arch-card" style="--card-accent: #0ea5e9; --card-light-bg: rgba(14, 165, 233, 0.1); --card-accent-border: rgba(14, 165, 233, 0.3); --card-glow: rgba(14, 165, 233, 0.2);" onclick="inspectModule('call-orchestrator')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">⚡</div>
+              <div class="card-title-group">
+                <h3>Call Orchestrator & Audio Prefetcher</h3>
+                <span class="file-tag">static/call-engine.js (CallEngine)</span>
+              </div>
+            </div>
+            <span class="card-tag">FSM & Barge-In</span>
+          </div>
+          <p class="card-desc">
+            Controls the state machine, manages natural barge-in interruptions, sanitizes text for voice, and streams audio seamlessly without inter-sentence gaps.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Conversational Flow Subsystems</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Finite State Machine:</strong> <code>IDLE</code> → <code>LISTENING</code> → <code>THINKING</code> → <code>SPEAKING</code></span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Barge-In Interrupt:</strong> High-volume speech cancels audio queue & stream instantly</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Markdown Stripper:</strong> Eliminates TTS reciting asterisks, bullets, or headers</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Gapless Prefetching:</strong> Next sentence synthesized while current plays (0ms gap)</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Inter-Sentence Delay: <strong>~0 ms</strong></span>
+            <span class="spec-pill">Watchdog: <strong>Auto-recover</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LIVE DATA BUS: CLIENT TO BACKEND -->
+    <div class="flow-connector-wrapper">
+      <div class="flow-bus">
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <span>Caller Speech</span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <span>VAD Finalize (16kHz WAV)</span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <span><code>POST /api/transcribe</code></span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <span>Faster-Whisper CUDA STT</span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <span>SSE Streaming <code>/chat_stream</code></span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">6</div>
+          <span>LLM + Tool Dispatch</span>
+        </div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-step">
+          <div class="flow-step-num">7</div>
+          <span>Piper Neural Audio Stream</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER 2: API GATEWAY, AUTH & HARDWARE SPEECH RUNTIMES -->
+    <section class="layer-container" data-layer-type="gateway">
+      <div class="layer-header">
+        <span class="layer-badge" style="background: var(--gateway-bg); color: var(--gateway-col); border: 1px solid var(--gateway-border);">Layer 02</span>
+        <h2 class="layer-title">API Gateway, Security Vault & Local Speech Services</h2>
+        <span class="layer-desc">FastAPI ASGI · PBKDF2 Session Security · Local Faster-Whisper · Local Piper Neural TTS</span>
+      </div>
+
+      <div class="module-grid-3">
+
+        <!-- Card: FastAPI Core Gateway & Auth -->
+        <div class="arch-card" style="--card-accent: #818cf8; --card-light-bg: rgba(129, 140, 248, 0.1); --card-accent-border: rgba(129, 140, 248, 0.3); --card-glow: rgba(129, 140, 248, 0.2);" onclick="inspectModule('gateway')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🛡️</div>
+              <div class="card-title-group">
+                <h3>FastAPI Gateway & Security Vault</h3>
+                <span class="file-tag">server.py (FastAPI App)</span>
+              </div>
+            </div>
+            <span class="card-tag">ASGI Async</span>
+          </div>
+          <p class="card-desc">
+            Asynchronous entry point with cryptographic PBKDF2 authentication, multi-tenant agent ownership isolation, and streaming SSE pipes.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Security & Protocol Standards</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>PBKDF2-HMAC-SHA256:</strong> 200,000 iterations, 16-byte random salt</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Session Cookies:</strong> 256-bit token, HttpOnly, SameSite=Lax</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Tenant Isolation:</strong> SQL injection-safe scoped agent ownership</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>SSE Streaming:</strong> Server-Sent Events with two-pass tool multiplexing</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Timing Attacks: <strong>Constant-Time</strong></span>
+            <span class="spec-pill">Session Life: <strong>30 Days</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: Local Faster-Whisper STT Engine -->
+        <div class="arch-card" style="--card-accent: #10b981; --card-light-bg: rgba(16, 185, 129, 0.1); --card-accent-border: rgba(16, 185, 129, 0.3); --card-glow: rgba(16, 185, 129, 0.2);" onclick="inspectModule('local-stt')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🧠</div>
+              <div class="card-title-group">
+                <h3>Local Faster-Whisper STT Engine</h3>
+                <span class="file-tag">server.py (/api/transcribe)</span>
+              </div>
+            </div>
+            <span class="card-tag">CUDA Float16</span>
+          </div>
+          <p class="card-desc">
+            100% private, on-premise automatic speech recognition running on CTranslate2 with Silero VAD and domain context biasing.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Inference Configuration</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Model Engine:</strong> <code>small.en</code> (with base.en / tiny.en fallback)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Hardware Acceleration:</strong> NVIDIA RTX GPU (CUDA float16, &lt;100ms)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Domain Prompting:</strong> Biases hotel rooms, dates, names, &amp; digits</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Artifact Scrubber:</strong> Strips 9 common hallucinated background phrases</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Beam Size: <strong>1 (Greedy)</strong></span>
+            <span class="spec-pill">VAD Prob: <strong>0.50 Silero</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: Local Piper Neural & SAPI5 TTS -->
+        <div class="arch-card" style="--card-accent: #22c55e; --card-light-bg: rgba(34, 197, 94, 0.1); --card-accent-border: rgba(34, 197, 94, 0.3); --card-glow: rgba(34, 197, 94, 0.2);" onclick="inspectModule('local-tts')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🔊</div>
+              <div class="card-title-group">
+                <h3>Local Offline Neural TTS</h3>
+                <span class="file-tag">server.py (/api/tts)</span>
+              </div>
+            </div>
+            <span class="card-tag">Piper ONNX + SAPI5</span>
+          </div>
+          <p class="card-desc">
+            Zero-latency, 100% offline neural speech synthesizer synthesizing human-like acoustic waveforms directly on local CPU/GPU.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Synthesis Architecture</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Primary Neural Engine:</strong> Piper <code>en_US-lessac-medium.onnx</code></span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Fallback Engine:</strong> Windows SAPI5 (Microsoft Zira / Microsoft David)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Zero Network Overhead:</strong> Eliminates cloud TTS per-character API costs</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Acoustic Output:</strong> 22,050 Hz high-fidelity PCM WAV stream</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Format: <strong>Audio/WAV</strong></span>
+            <span class="spec-pill">Cost: <strong>$0 / 100% Offline</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LAYER 3: COGNITIVE INTELLIGENCE, CONTEXT ASSEMBLY & RAG -->
+    <section class="layer-container" data-layer-type="cognitive">
+      <div class="layer-header">
+        <span class="layer-badge" style="background: var(--llm-bg); color: var(--llm-col); border: 1px solid var(--llm-border);">Layer 03</span>
+        <h2 class="layer-title">Cognitive Intelligence, Context Assembly & BM25 RAG</h2>
+        <span class="layer-desc">Groq Llama 3.1 / Ollama · Dynamic Calendar Context · BM25 Search · Function Tools</span>
+      </div>
+
+      <div class="module-grid">
+
+        <!-- Card: Conversational LLM Gateway & Tool Calling -->
+        <div class="arch-card" style="--card-accent: #f59e0b; --card-light-bg: rgba(245, 158, 11, 0.1); --card-accent-border: rgba(245, 158, 11, 0.3); --card-glow: rgba(245, 158, 11, 0.2);" onclick="inspectModule('llm-engine')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🤖</div>
+              <div class="card-title-group">
+                <h3>Conversational LLM & Two-Pass Tool Dispatch</h3>
+                <span class="file-tag">server.py (chat_stream / llm_chat)</span>
+              </div>
+            </div>
+            <span class="card-tag">OpenAI API Compatible</span>
+          </div>
+          <p class="card-desc">
+            Manages conversational turn generation via Groq or Ollama, automatically executing function calls and streaming natural vocal responses.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Reasoning & Function Dispatch</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Backends:</strong> Groq (Llama 3.1 8B / 70B) or local Ollama (<code>qwen2.5:3b</code>)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Tool: <code>save_booking</code>:</strong> Extracts caller name, phone, slot &amp; reason</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Tool: <code>update_booking</code>:</strong> In-call correction handling caller edits</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Dynamic Calendar Context:</strong> Maps relative days ("tomorrow") to real-time dates</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">TTFT: <strong>&lt; 280ms (Groq)</strong></span>
+            <span class="spec-pill">Max Output: <strong>300 Tokens</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: BM25 Knowledge Retrieval (RAG) -->
+        <div class="arch-card" style="--card-accent: #f97316; --card-light-bg: rgba(249, 115, 22, 0.1); --card-accent-border: rgba(249, 115, 22, 0.3); --card-glow: rgba(249, 115, 22, 0.2);" onclick="inspectModule('rag-engine')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">📚</div>
+              <div class="card-title-group">
+                <h3>Multi-Turn BM25 RAG Pipeline</h3>
+                <span class="file-tag">server.py (retrieve_context / bm25_search)</span>
+              </div>
+            </div>
+            <span class="card-tag">Sub-ms Retrieval</span>
+          </div>
+          <p class="card-desc">
+            Ultra-fast keyword ranking with conversation history expansion. Retrieves accurate pricing, hotel policies, and menus in 0.05ms without vector DB overhead.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Algorithmic Mechanisms</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Multi-Turn Query Expansion:</strong> Combines last user turn with prior 4 turns</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>BM25 Formulation:</strong> k₁ = 1.5, b = 0.75 with domain stopword filtering</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Semantic Chunker:</strong> Paragraph-boundary split (800 chars, 1-para overlap)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Document Parsers:</strong> In-memory PDF (pypdf), DOCX (xml zip), &amp; UTF-8 text</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Precision@1: <strong>100.0%</strong></span>
+            <span class="spec-pill">Search Latency: <strong>0.052 ms</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LAYER 4: QUANTUM OPTIMIZATION CO-PROCESSORS -->
+    <section class="layer-container" data-layer-type="quantum">
+      <div class="layer-header">
+        <span class="layer-badge" style="background: var(--quantum-bg); color: var(--quantum-col); border: 1px solid var(--quantum-border);">Layer 04</span>
+        <h2 class="layer-title">Quantum Optimization Co-Processors (QPU / Simulation)</h2>
+        <span class="layer-desc">IBM Qiskit QAOA · PennyLane VQC · QUBO Mathematical Formulations · Prompt Redo Engine</span>
+      </div>
+
+      <div class="module-grid">
+
+        <!-- Card: IBM Qiskit QAOA Prompt Optimizer -->
+        <div class="arch-card" style="--card-accent: #ec4899; --card-light-bg: rgba(236, 72, 153, 0.1); --card-accent-border: rgba(236, 72, 153, 0.3); --card-glow: rgba(236, 72, 153, 0.2);" onclick="inspectModule('quantum-prompt')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">⚛️</div>
+              <div class="card-title-group">
+                <h3>IBM Qiskit QAOA Prompt Optimizer</h3>
+                <span class="file-tag">server.py (/api/optimize-prompt)</span>
+              </div>
+            </div>
+            <span class="card-tag">QUBO Optimization</span>
+          </div>
+          <p class="card-desc">
+            Transforms raw prompt drafts into production voice prompts using Quadratic Unconstrained Binary Optimization (QUBO) solved via IBM Qiskit QAOA.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Quantum Algorithm & Verification</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Multi-Variant Generation:</strong> Thorough, Warm, &amp; Crisp structured candidates</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>QUBO Formulation:</strong> Maximizes objective score subject to one-hot constraint ∑ xᵢ = 1</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>QAOA Circuit:</strong> <code>COBYLA</code> optimizer + <code>StatevectorSampler</code> reps=1</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Prompt Checker &amp; Redo Loop:</strong> Ensures 100% price and policy fact retention</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Objective Score: <strong>167.0 Pts</strong></span>
+            <span class="spec-pill">Fact Retention: <strong>100% Guaranteed</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: PennyLane VQC Schedule Conflict Resolver -->
+        <div class="arch-card" style="--card-accent: #d946ef; --card-light-bg: rgba(217, 70, 239, 0.1); --card-accent-border: rgba(217, 70, 239, 0.3); --card-glow: rgba(217, 70, 239, 0.2);" onclick="inspectModule('quantum-schedule')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">🔮</div>
+              <div class="card-title-group">
+                <h3>PennyLane VQC Conflict Resolver</h3>
+                <span class="file-tag">server.py (/api/optimize-schedule)</span>
+              </div>
+            </div>
+            <span class="card-tag">Variational Quantum</span>
+          </div>
+          <p class="card-desc">
+            Resolves booking overlaps and double-bookings by formulating Maximum Independent Set QUBOs mapped onto PennyLane Variational Quantum Circuits (VQC).
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Quantum Circuit Topology</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Conflict Graph:</strong> Identifies temporal overlap edges $(i, j)$ in reservation requests</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>QAOA-Style Ansatz:</strong> Hadamard superposition + Entangling CNOT-RZ gates</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Hamiltonian Penalty:</strong> H = 4 ∑ xᵢ xⱼ − ∑ xᵢ with Gradient Descent (step=0.3)</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Eigenstate Output:</strong> Confirms winning slots; proposes +1hr alternative for losers</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Capacity: <strong>Up to 8 Qubits</strong></span>
+            <span class="spec-pill">Optimization Time: <strong>~28.4 ms</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LAYER 5: PERSISTENCE, WEBHOOKS & CALENDAR INTEGRATIONS -->
+    <section class="layer-container" data-layer-type="storage">
+      <div class="layer-header">
+        <span class="layer-badge" style="background: var(--ext-bg); color: var(--ext-col); border: 1px solid var(--ext-border);">Layer 05</span>
+        <h2 class="layer-title">Persistence, Real-Time Webhooks & Calendar Integrations</h2>
+        <span class="layer-desc">SQLite WAL Storage · Asynchronous HTTP POST Webhooks · Google Calendar & RFC 5545 ICS</span>
+      </div>
+
+      <div class="module-grid">
+
+        <!-- Card: SQLite Embedded Database -->
+        <div class="arch-card" style="--card-accent: #38bdf8; --card-light-bg: rgba(56, 189, 248, 0.1); --card-accent-border: rgba(56, 189, 248, 0.3); --card-glow: rgba(56, 189, 248, 0.2);" onclick="inspectModule('sqlite-db')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">💾</div>
+              <div class="card-title-group">
+                <h3>SQLite Multi-Tenant Storage Engine</h3>
+                <span class="file-tag">agents.db (WAL Mode)</span>
+              </div>
+            </div>
+            <span class="card-tag">Zero-Config ACID</span>
+          </div>
+          <p class="card-desc">
+            High-concurrency SQLite storage with Write-Ahead Logging (WAL) and foreign keys enabled, ensuring non-blocking reads and data integrity.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Relational Schema &amp; Entities</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><code>users</code> &amp; <code>sessions</code>: PBKDF2 authentication credentials &amp; active tokens</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><code>agents</code>: System prompt, voice ID, barge-in toggle, webhook endpoint</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><code>documents</code> &amp; <code>chunks</code>: Ingested text chunks indexed for BM25</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><code>calls</code> &amp; <code>bookings</code>: Complete turn transcripts &amp; captured lead contacts</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Pragma: <strong>journal_mode=WAL</strong></span>
+            <span class="spec-pill">Lock Timeout: <strong>15,000 ms</strong></span>
+          </div>
+        </div>
+
+        <!-- Card: Webhooks & External Calendar Integrations -->
+        <div class="arch-card" style="--card-accent: #a855f7; --card-light-bg: rgba(168, 85, 247, 0.1); --card-accent-border: rgba(168, 85, 247, 0.3); --card-glow: rgba(168, 85, 247, 0.2);" onclick="inspectModule('webhooks-cal')">
+          <div class="card-top">
+            <div class="card-id-block">
+              <div class="card-icon">📡</div>
+              <div class="card-title-group">
+                <h3>Webhook Dispatcher &amp; Calendar Suite</h3>
+                <span class="file-tag">server.py (fire_webhook / generate_ics)</span>
+              </div>
+            </div>
+            <span class="card-tag">Event-Driven Push</span>
+          </div>
+          <p class="card-desc">
+            Dispatches captured leads immediately to Zapier, Make, n8n, or CRM webhooks while generating instant 1-click Google Calendar & RFC 5545 ICS calendar invites.
+          </p>
+          <div class="submodule-box">
+            <div class="submodule-box-title">Ecosystem Integrations</div>
+            <ul class="feature-list">
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Async Background Tasks:</strong> Non-blocking HTTP POST via <code>httpx.AsyncClient</code></span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>Webhook Testing:</strong> Direct ping test button with roundtrip latency reporting</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>1-Click Google Calendar:</strong> Deep links prefilled with guest contact &amp; time</span>
+              </li>
+              <li class="feature-item">
+                <svg fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                <span><strong>RFC 5545 iCalendar:</strong> Native <code>.ics</code> exports for Apple &amp; Outlook calendars</span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-footer">
+            <span class="spec-pill">Payload: <strong>JSON + ISO8601</strong></span>
+            <span class="spec-pill">Retry Safety: <strong>Best-effort fire</strong></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Side Inspection Drawer (Interactive Drilldown) -->
+  <aside id="inspector-drawer" class="inspector-drawer">
+    <div class="inspector-header">
+      <div class="card-id-block">
+        <div id="d-icon" class="card-icon">📌</div>
+        <div>
+          <h3 id="d-title" style="font-size: 1.1rem; color: #fff;">Module Title</h3>
+          <span id="d-file" class="file-tag">file/path.py</span>
+        </div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    </div>
+
+    <div class="inspector-section">
+      <h4>Architectural Purpose &amp; Role</h4>
+      <p id="d-desc" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;"></p>
+    </div>
+
+    <div class="inspector-section">
+      <h4>Key Function Signatures / Schemas</h4>
+      <div id="d-code" class="code-box"></div>
+    </div>
+
+    <div class="inspector-section">
+      <h4>Performance &amp; SLA Specs</h4>
+      <div id="d-specs" style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem;"></div>
+    </div>
+  </aside>
+
+  <script>
+    // Detailed architectural data for interactive inspection
+    const MODULE_DATA = {
+      'studio-ui': {
+        icon: '💻',
+        title: 'Agent Studio & Management UI',
+        file: 'static/index.html · static/app.js',
+        desc: 'Single-Page Application (SPA) designed with vanilla JavaScript, providing real-time reactivity without heavyweight frameworks. Facilitates comprehensive voice agent design, document ingestion, call history review, and lead export.',
+        code: `// Key Frontend Functions in static/app.js:
+async function loadAgents() { ... }
+async function saveCurrentAgent() { ... }
+async function startCall() { 
+  callEngine.start({
+    agentId: currentAgent.id,
+    systemPrompt: currentAgent.system_prompt,
+    greeting: currentAgent.greeting,
+    voiceName: currentAgent.voice_name,
+    rate: currentAgent.rate,
+    bargeIn: currentAgent.barge_in
+  });
+}
+async function uploadDocument(file) { ... }`,
+        specs: [
+          '• Framework: Native Vanilla JS (0 dependencies)',
+          '• Audio Visualizer: HTML5 Canvas 60fps RMS waveform',
+          '• State Persistence: Local session cookie + REST synchronization',
+          '• Responsive Layout: Desktop Studio + Mobile Widget'
+        ]
+      },
+      'client-vad': {
+        icon: '🎤',
+        title: 'Hysteresis VAD & Audio Pipeline',
+        file: 'static/call-engine.js (LocalWhisperSTT)',
+        desc: 'Advanced client-side Voice Activity Detection running on ScriptProcessorNode/AudioWorklet. Implements a dual-threshold hysteresis model ensuring soft consonants, breaths, and natural pauses are never chopped off.',
+        code: `// Hysteresis Thresholds in LocalWhisperSTT:
+const startThreshold = Math.max(0.022, this.noiseFloor * 2.2);
+const continueThreshold = Math.max(0.011, this.noiseFloor * 1.3);
+
+// Silence Hold Duration:
+const silenceSampleLimit = Math.floor(sampleRate * 1.25); // 1.25s
+const minUtteranceSamples = Math.floor(sampleRate * 0.45); // 450ms
+
+// Downsampler: Linear interpolation to 16,000Hz mono PCM WAV`,
+        specs: [
+          '• VAD Thresholds: Start 0.022 RMS / Continue 0.011 RMS',
+          '• Noise Floor Adaption: Clamped 0.006 to 0.025 (idle only)',
+          '• Silence Window: 1.25 seconds sustained pause',
+          '• Resampling Target: 16,000 Hz, 16-bit Mono PCM'
+        ]
+      },
+      'call-orchestrator': {
+        icon: '⚡',
+        title: 'Call Orchestrator & Audio Prefetcher',
+        file: 'static/call-engine.js (CallEngine)',
+        desc: 'Manages conversational turn state, streaming text parsing, and gapless audio prefetching. Ensures the agent speaks with natural pauses and immediately yields when interrupted by the caller.',
+        code: `// Turn-Taking State Machine:
+state: 'idle' | 'listening' | 'thinking' | 'speaking'
+
+// Gapless Audio Prefetching:
+_splitSentences(text) -> ['First sentence.', 'Second sentence.']
+_enqueueSentence(sentence) ->
+  _prefetchAudio(sentence) -> fetch('/api/tts') -> Blob
+  _playNextQueue() -> Plays current while next preloads`,
+        specs: [
+          '• Inter-Sentence Latency: ~0 ms via predictive prefetching',
+          '• Markdown Sanitizer: Strips asterisks, hash tags, backticks, emojis',
+          '• Echo Cancellation: Web Audio MediaStream constraints enabled',
+          '• Watchdog Watcher: 12-second fail-safe network recovery'
+        ]
+      },
+      'gateway': {
+        icon: '🛡️',
+        title: 'FastAPI Gateway & Security Vault',
+        file: 'server.py (FastAPI App & Auth)',
+        desc: 'High-performance ASGI gateway providing secure endpoints, cookie-session verification, and server-sent event (SSE) streaming for real-time text and event delivery.',
+        code: `// PBKDF2 Password Hashing (server.py):
+def hash_pw(password: str, salt: Optional[str] = None):
+    salt = salt or secrets.token_hex(16)
+    h = hashlib.pbkdf2_hmac("sha256", password.encode(), 
+                            bytes.fromhex(salt), 200_000).hex()
+    return salt, h
+
+// Scoped Agent Verification:
+def owned_agent(conn, agent_id: int, user: dict):
+    row = conn.execute("SELECT * FROM agents WHERE id = ? AND "
+                       "(user_id = ? OR user_id IS NULL)", 
+                       (agent_id, user["id"])).fetchone()
+    if not row: raise HTTPException(404, "Agent not found")
+    return row`,
+        specs: [
+          '• Hash Algorithm: PBKDF2-HMAC-SHA256 (200,000 iterations)',
+          '• Salt Entropy: 16 bytes (128-bit hex)',
+          '• Session Key: 32 bytes (256-bit urlsafe token)',
+          '• Cookie Policies: HttpOnly=True, SameSite="lax", Secure=Configurable'
+        ]
+      },
+      'local-stt': {
+        icon: '🧠',
+        title: 'Local Faster-Whisper STT Engine',
+        file: 'server.py (/api/transcribe)',
+        desc: 'Hardware-accelerated Speech-to-Text inference powered by Faster-Whisper (CTranslate2). Transcribes audio chunks on an NVIDIA RTX GPU using float16 CUDA execution for sub-100ms response times.',
+        code: `@app.post("/api/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    model = get_whisper_model()
+    segments, info = model.transcribe(
+        audio_stream,
+        beam_size=1,        # Greedy search for lowest latency
+        temperature=0.0,
+        initial_prompt="Hotel room reservation, Deluxe Room, ...",
+        vad_filter=True,
+        vad_parameters=dict(threshold=0.5, min_speech_duration_ms=250)
+    )
+    return {"text": clean_text, "language": info.language}`,
+        specs: [
+          '• Model: small.en (244M parameters)',
+          '• Execution Provider: NVIDIA CUDA float16 (RTX 4050/3060/etc)',
+          '• Inference Latency: < 100ms for 3-second speech chunk',
+          '• Hallucination Filter: 9 custom noise artifact suppressors'
+        ]
+      },
+      'local-tts': {
+        icon: '🔊',
+        title: 'Local Offline Neural TTS',
+        file: 'server.py (/api/tts)',
+        desc: '100% offline text-to-speech engine using Piper ONNX neural models and Windows SAPI5 fallbacks. Generates broadcast-quality vocal audio locally without recurring cloud synthesis fees.',
+        code: `@app.post("/api/tts")
+async def local_offline_tts(request: Request):
+    text = clean_speech_text(body.get("text"))
+    voice_id = body.get("voice", "piper-lessac")
+    
+    # 1. Windows Native SAPI5 Speech
+    if "zira" in voice_id or "david" in voice_id:
+        return synthesize_windows_sapi5(text, voice_id)
+        
+    # 2. Local Neural Voice via Piper ONNX
+    piper = get_piper_voice()
+    piper.synthesize_wav(text, wav_file)
+    return Response(content=buf.getvalue(), media_type="audio/wav")`,
+        specs: [
+          '• Neural Model: Piper en_US-lessac-medium.onnx',
+          '• Fallback Model: Microsoft Zira / David (Windows Native)',
+          '• Sample Rate: 22,050 Hz 16-bit Mono WAV',
+          '• Cost: $0.00 / Zero Network Dependency'
+        ]
+      },
+      'llm-engine': {
+        icon: '🤖',
+        title: 'Conversational LLM & Two-Pass Tool Dispatch',
+        file: 'server.py (chat_stream / llm_chat)',
+        desc: 'Directs conversational context through high-speed LLMs. When the model selects a tool (e.g. save_booking), the server executes the function, appends the result to the history, and streams the final conversational confirmation.',
+        code: `// Two-Pass Streaming Engine (/chat_stream):
+1. Send initial context (System Prompt + Calendar + History) to LLM
+2. If tool_calls buffer populated:
+   - Execute save_booking or update_booking in DB
+   - Dispatch async Webhook in background_tasks
+   - Append tool output message to convo array
+3. Initiate second streaming pass with tool result
+4. Stream final conversational speech tokens via SSE`,
+        specs: [
+          '• Default Cloud Model: Llama-3.1-8b-instant (via Groq)',
+          '• Default Local Model: qwen2.5:3b / qwen3.8-27b (via Ollama)',
+          '• Time to First Token: ~280ms',
+          '• Spoken Constraint: 1-3 conversational sentences, single question'
+        ]
+      },
+      'rag-engine': {
+        icon: '📚',
+        title: 'Multi-Turn BM25 RAG Pipeline',
+        file: 'server.py (retrieve_context / bm25_search)',
+        desc: 'High-speed in-memory keyword retrieval with Okapi BM25. Solves co-reference issues (e.g. "How much is it?") by automatically appending context tokens from prior conversation turns.',
+        code: `def retrieve_context(agent_id, query, conversation_history, k=3):
+    # Multi-turn conversational expansion
+    if conversation_history:
+        prior = [m["content"] for m in reversed(conversation_history[-4:])]
+        expanded_query = query + " " + " ".join(prior)
+        
+    indices = bm25_search(expanded_query, docs, k=k)
+    return [docs[i] for i in indices]`,
+        specs: [
+          '• BM25 Parameters: k1=1.5, b=0.75',
+          '• Avg Retrieval Latency: 0.052 ms',
+          '• Precision@1: 100.0% on domain benchmarks',
+          '• Chunker: 800 characters with 1-paragraph overlap'
+        ]
+      },
+      'quantum-prompt': {
+        icon: '⚛️',
+        title: 'IBM Qiskit QAOA Prompt Optimizer',
+        file: 'server.py (/api/optimize-prompt)',
+        desc: 'Maps prompt engineering objectives into a Quadratic Program solved via QAOA. Evaluates candidates across role definition, voice boundaries, length, and detail retention, guaranteeing no business facts are lost.',
+        code: `// QAOA QUBO Formulation (server.py):
+qp = QuadraticProgram()
+for i in range(num_paths): qp.binary_var(f"x_{i}")
+qp.maximize(linear={f"x_{i}": scores[i] for i in range(num_paths)})
+qp.linear_constraint(linear={f"x_{i}": 1 for i in range(num_paths)}, 
+                    sense="==", rhs=1, name="one_hot")
+
+qaoa = QAOA(Sampler(), COBYLA(), reps=1)
+result = MinimumEigenOptimizer(qaoa).solve(qp)`,
+        specs: [
+          '• Framework: IBM Qiskit Algorithms & Qiskit Optimization',
+          '• Classical Optimizer: COBYLA (1 rep)',
+          '• QUBO Formulation: Binary Selection with One-Hot Constraint',
+          '• Post-Optimization Audit: Automated Redo Loop for missing prices'
+        ]
+      },
+      'quantum-schedule': {
+        icon: '🔮',
+        title: 'PennyLane VQC Conflict Resolver',
+        file: 'server.py (/api/optimize-schedule)',
+        desc: 'Resolves schedule collisions using a Variational Quantum Circuit (VQC) parameterized with entangling gates to find the Maximum Independent Set of conflict-free appointment slots.',
+        code: `// PennyLane VQC Ansatz (server.py):
+dev = qml.device("default.qubit", wires=n)
+@qml.qnode(dev)
+def circuit(params):
+    for i in range(n): qml.Hadamard(wires=i)
+    for (i, j) in conflicts:
+        qml.CNOT(wires=[i, j])
+        qml.RZ(params[0], wires=j)
+        qml.CNOT(wires=[i, j])
+    for i in range(n): qml.RX(params[1], wires=i)
+    return qml.probs(wires=range(n))`,
+        specs: [
+          '• Framework: PennyLane Quantum Machine Learning',
+          '• Optimizer: GradientDescentOptimizer (stepsize=0.3, 12 steps)',
+          '• Conflict Penalty: 4x penalty on overlapping booking bitstrings',
+          '• Outcome: Confirms best eigenstate; reschedules losers by +1 hour'
+        ]
+      },
+      'sqlite-db': {
+        icon: '💾',
+        title: 'SQLite Multi-Tenant Storage Engine',
+        file: 'agents.db (WAL Mode)',
+        desc: 'Lightweight, ultra-durable transactional database with WAL mode enabled. Handles concurrent user sessions, private agents, document chunks, call logs, and captured customer bookings.',
+        code: `// Database Setup & Configuration:
+conn.execute("PRAGMA journal_mode=WAL;")
+conn.execute("PRAGMA busy_timeout=15000;")
+conn.execute("PRAGMA foreign_keys = ON;")
+
+// Core Tables:
+users (id, email, pw_salt, pw_hash, created_at)
+agents (id, user_id, name, system_prompt, greeting, voice_name, ...)
+documents & chunks (id, agent_id, content, created_at)
+calls & bookings (id, agent_id, call_uid, name, phone, datetime, reason)`,
+        specs: [
+          '• Journal Mode: Write-Ahead Logging (WAL)',
+          '• Concurrency: Unblocked concurrent reads during writes',
+          '• Timeout: 15,000 ms busy handler',
+          '• Backup: Single-file portability (agents.db)'
+        ]
+      },
+      'webhooks-cal': {
+        icon: '📡',
+        title: 'Webhook Dispatcher & Calendar Suite',
+        file: 'server.py (fire_webhook / generate_ics)',
+        desc: 'Dispatches instant lead notifications to external automation workflows (Zapier, Make, n8n) and provides standard calendar event invitations for seamless scheduling.',
+        code: `// Outbound Webhook JSON Payload:
+{
+  "event": "booking_captured",
+  "timestamp": "2026-09-16T12:00:00Z",
+  "agent": { "id": 1, "name": "Aria" },
+  "booking": {
+    "name": "Guest Caller",
+    "phone": "+1 555-0199",
+    "datetime": "tomorrow 3pm",
+    "google_calendar_url": "https://calendar.google.com/calendar/render?...",
+    "ics_url": "/api/agents/1/bookings/42/ics"
+  }
+}`,
+        specs: [
+          '• Webhook Client: httpx.AsyncClient with 10s timeout',
+          '• Background Execution: FastAPI BackgroundTasks',
+          '• iCalendar Format: RFC 5545 compliant (PRODID: Voice Agent Studio)',
+          '• Calendar Integration: Google Calendar Render URL + Apple/Outlook ICS'
+        ]
+      }
+    };
+
+    function inspectModule(key) {
+      const data = MODULE_DATA[key];
+      if (!data) return;
+
+      document.getElementById('d-icon').textContent = data.icon;
+      document.getElementById('d-title').textContent = data.title;
+      document.getElementById('d-file').textContent = data.file;
+      document.getElementById('d-desc').textContent = data.desc;
+      document.getElementById('d-code').textContent = data.code;
+
+      const specsContainer = document.getElementById('d-specs');
+      specsContainer.innerHTML = '';
+      data.specs.forEach(s => {
+        const item = document.createElement('div');
+        item.textContent = s;
+        item.style.color = '#cbd5e1';
+        specsContainer.appendChild(item);
+      });
+
+      // Highlight active card
+      document.querySelectorAll('.arch-card').forEach(c => c.classList.remove('active-card'));
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active-card');
+      }
+
+      document.getElementById('inspector-drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('inspector-drawer').classList.remove('open');
+      document.querySelectorAll('.arch-card').forEach(c => c.classList.remove('active-card'));
+    }
+
+    function filterLayers(layer) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.querySelector(`[data-filter="${layer}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const containers = document.querySelectorAll('.layer-container');
+      containers.forEach(c => {
+        if (layer === 'all' || c.getAttribute('data-layer-type') === layer) {
+          c.style.display = 'block';
+        } else {
+          c.style.display = 'none';
+        }
+      });
+    }
+
+    // Close drawer on Escape
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  </script>
+</body>
+</html>

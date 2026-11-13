@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Agent Studio — Complete System Flow Diagram</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Master Diagram Canvas (White, Crisp, Elevated) */
+    .diagram-board {
+      width: 100%;
+      max-width: 1480px;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 12px 18px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    /* Top Master Header */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 32px;
+      height: 32px;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .header-titles h1 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .header-titles p {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+
+    .badge-strip {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid #e2e8f0;
+    }
+    .badge-green { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .badge-purple { background: #faf5ff; color: #6b21a8; border-color: #e9d5ff; }
+    .badge-blue { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+
+    /* Top Row: Container 1 (Admin & RAG) + Container 2 (Quantum Optimizer) */
+    .top-row {
+      display: grid;
+      grid-template-columns: 45% 55%;
+      gap: 10px;
+      height: 220px;
+      flex-shrink: 0;
+    }
+
+    /* Container Box Base */
+    .section-container {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+      position: relative;
+    }
+
+    .container-title {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #1e293b;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .container-title .tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Sub-Boxes within Containers */
+    .box-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .box-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+    }
+
+    .box-desc {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    /* Flow Layout Elements */
+    .flow-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-step {
+      flex: 1;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 8px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .flow-step-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .flow-step-sub {
+      font-size: 9.5px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .arrow-sign {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* Middle Row: Container 3 - The Real-Time Voice Loop */
+    .middle-row {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+    }
+
+    .voice-pipeline-grid {
+      display: grid;
+      grid-template-columns: 115px 30px 155px 30px 185px 30px 200px 30px 185px 30px 155px 30px 115px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .voice-node-card {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      position: relative;
+    }
+
+    .node-icon {
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+
+    .node-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+
+    .node-sub {
+      font-size: 9.5px;
+      color: #475569;
+      line-height: 1.3;
+    }
+
+    .node-latency-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+    }
+
+    .svg-arrow-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Guardrail Banner */
+    .guardrail-security-box {
+      background: #fffbeb;
+      border: 1.5px dashed #f59e0b;
+      border-radius: 8px;
+      padding: 7px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 11px;
+      color: #92400e;
+    }
+
+    .guardrail-security-box strong {
+      color: #78350f;
+    }
+
+    /* Bottom Row: Container 4 (Solving 1,000 Docker Images Redundancy) */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 32% 68%;
+      gap: 10px;
+      height: 180px;
+      flex-shrink: 0;
+    }
+
+    .table-clean {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+
+    .table-clean th, .table-clean td {
+      padding: 5px 8px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table-clean th {
+      color: #64748b;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 9.5px;
+      background: #f8fafc;
+    }
+
+    .text-danger { color: #dc2626; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .text-success { color: #16a34a; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+    .docker-flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 20px 1fr 20px 1fr 20px 1.2fr;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .docker-flow-card {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .cmd-pill {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    /* Color Accents */
+    .bg-blue-light { background: #eff6ff; border-color: #93c5fd; }
+    .bg-green-light { background: #f0fdf4; border-color: #86efac; }
+    .bg-pink-light { background: #fdf2f8; border-color: #fbcfe8; }
+    .bg-purple-light { background: #faf5ff; border-color: #d8b4fe; }
+    .bg-amber-light { background: #fffbeb; border-color: #fde68a; }
+    .bg-rose-light { background: #fff1f2; border-color: #fecdd3; }
+    .bg-cyan-light { background: #ecfeff; border-color: #a5f3fc; }
+  </style>
+</head>
+<body>
+
+  <!-- Master Canvas (1520px x 890px fits cleanly in standard displays) -->
+  <div class="diagram-board">
+
+    <!-- Header Bar -->
+    <div class="header-bar">
+      <div class="header-left">
+        <div class="header-icon">🎙️</div>
+        <div class="header-titles">
+          <h1>VOICE AGENT STUDIO — SYSTEM WORKFLOW &amp; ARCHITECTURE FLOW</h1>
+          <p>Local Offline Voice Loop • IBM Qiskit QAOA Optimization • Caller PII Guardrail • Multi-Tenant Universal Container</p>
+        </div>
+      </div>
+      <div class="badge-strip">
+        <div class="stat-badge badge-green">⚡ Latency: &lt; 250ms Loop</div>
+        <div class="stat-badge badge-purple">⚛️ Optimizer: IBM Qiskit QAOA (QUBO reps=1)</div>
+        <div class="stat-badge badge-blue">📦 Container: 1 Base Image for 1,000+ Agents</div>
+      </div>
+    </div>
+
+    <!-- Top Row: Admin & RAG (Left) + Quantum Prompt Optimizer (Right) -->
+    <div class="top-row">
+
+      <!-- CONTAINER 1: CLIENT DOMAIN & GROUNDING -->
+      <div class="section-container" style="border-top: 3px solid #0284c7;">
+        <div class="container-title">
+          <span>🏢 Container 1: Client Admin &amp; Knowledge Grounding</span>
+          <span class="tag" style="background:#e0f2fe; color:#0369a1;">B2B Domain</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <!-- Persona -->
+          <div class="box-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+            <div class="box-title" style="color: #166534;">
+              <span>👔 Client (Business / Industry)</span>
+            </div>
+            <div class="box-desc">
+              Businesses (hotels, clinics, repair centers) configure agents, define core policies, upload proprietary documents, and link Google services.
+            </div>
+          </div>
+
+          <!-- RAG Ingestion -->
+          <div class="box-card" style="background: #eff6ff; border-color: #bfdbfe;">
+            <div class="box-title" style="color: #1e40af;">
+              <span>📁 Google Drive &amp; Direct Docs</span>
+            </div>
+            <div class="box-desc">
+              PDFs, DOCX, TXTs parsed &bull; 800-char paragraph chunker with 1-paragraph overlap &bull; Top-3 grounded vector retrieval in &lt;20ms.
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Workspace Tools -->
+        <div class="box-card" style="margin-top: auto; background: #faf5ff; border-color: #e9d5ff;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="box-title" style="color: #6b21a8; margin-bottom: 0;">
+              <span>🔌 Google Workspace Tool Execution Bridge</span>
+            </div>
+            <span style="font-size: 10px; font-weight: 700; color: #7c3aed; font-family:'JetBrains Mono';">TOOLS</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px;">
+            <div style="font-size: 11px; color: #475569;">
+              <strong>📅 Google Calendar:</strong> Real-time free/busy check &bull; 1-click booking URLs &bull; PennyLane VQC graph conflict resolution.
+            </div>
+            <div style="font-size: 11px; color: #475569;">
+              <strong>✉️ Gmail Bridge:</strong> Auto-sends structured booking confirmations to caller and executive summary alerts to business inbox.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTAINER 2: QUANTUM PROMPT OPTIMIZER -->
+      <div class="section-container" style="border-top: 3px solid #db2777;">
+        <div class="container-title">
+          <span>⚛️ Container 2: Quantum Prompt Optimizer Engine</span>
+          <span class="tag" style="background:#fce7f3; color:#be185d;">IBM Qiskit QAOA</span>
+        </div>
+
+        <!-- Step-by-Step Flow -->
+        <div class="flow-row" style="margin-top: 2px;">
+          <!-- 1. Draft -->
+          <div class="flow-step" style="border-color: #cbd5e1;">
+            <div class="flow-step-title">1. Simple Draft</div>
+            <div class="flow-step-sub">Unstructured User Input</div>
+          </div>
+          <div class="arrow-sign">➔</div>
+
+          <!-- 2. Variants -->
+          <div class="flow-step bg-pink-light">
+            <div class="flow-step-title" style="color: #be185d;">2. n=3 Variants</div>
+            <div class="flow-step-sub">4 Candidates (Orig+3)</div>
+          </div>
+          <div class="arrow-sign">➔</div>
+
+          <!-- 3. QUBO -->
+          <div class="flow-step bg-purple-light">
+            <div class="flow-step-title" style="color: #6b21a8;">3. QUBO Matrix</div>
+            <div class="flow-step-sub">Score Preserv/Voice/Rules</div>
+          </div>
+          <div class="arrow-sign">➔</div>
+
+          <!-- 4. QAOA -->
+          <div class="flow-step bg-green-light">
+            <div class="flow-step-title" style="color: #15803d;">4. Qiskit QAOA</div>
+            <div class="flow-step-sub">StatevectorSampler (reps=1)</div>
+          </div>
+          <div class="arrow-sign">➔</div>
+
+          <!-- 5. Redo Checker -->
+          <div class="flow-step bg-amber-light">
+            <div class="flow-step-title" style="color: #b45309;">5. Redo Checker</div>
+            <div class="flow-step-sub">0 Lost Facts Audit</div>
+          </div>
+          <div class="arrow-sign">➔</div>
+
+          <!-- 6. Production Swap -->
+          <div class="flow-step" style="background: #ecfdf5; border-color: #10b981;">
+            <div class="flow-step-title" style="color: #047857;">6. Prompt Swap</div>
+            <div class="flow-step-sub">Swapped with Simple</div>
+          </div>
+        </div>
+
+        <!-- Heuristic Matrix Callout Box -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px; margin-top: auto;">
+          <div class="box-card" style="font-size: 10.5px; color: #475569;">
+            <strong style="color: #0f172a;">QUBO Scoring Formulation:</strong>
+            Detail Preservation (+40 pts) rewards 100% retention of prices/rates &bull; Persona Definition (+20 pts) &bull; Spoken Voice formatting (+10 pts) &bull; Turn-taking 1-3 sentences (+8 pts) &bull; Markdown Penalties (-25 pts).
+          </div>
+          <div class="box-card" style="font-size: 10.5px; color: #475569;">
+            <strong style="color: #0f172a;">Why QAOA vs. VQC:</strong>
+            <strong>QAOA</strong> solves discrete 1-of-N prompt selection with strict constraint <span style="font-family:'JetBrains Mono'; font-weight:700;">sum(x_i) == 1</span>. <strong>PennyLane VQC</strong> is reserved for continuous calendar conflict resolution.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Middle Row: Container 3 - Real-Time Voice Call Flow & Dual Guardrails -->
+    <div class="middle-row">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px;">📞</span>
+          <span style="font-size: 13px; font-weight: 800; text-transform: uppercase; color: #1e293b; letter-spacing: 0.02em;">
+            Container 3: Real-Time Local Voice Call Pipeline &amp; Dual Local Guardrails
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 11px; color: #64748b;">Turnaround Time:</span>
+          <span class="stat-badge badge-green" style="font-size: 10px; padding: 2px 7px;">Sub-250ms Loop</span>
+          <span class="stat-badge badge-blue" style="font-size: 10px; padding: 2px 7px;">100% Offline (No Cloud Bills)</span>
+        </div>
+      </div>
+
+      <!-- 7-Stage Voice Call Grid with Arrows -->
+      <div class="voice-pipeline-grid">
+        <!-- 1. Caller In -->
+        <div class="voice-node-card bg-green-light">
+          <div class="node-icon">👤</div>
+          <div class="node-title">Caller (User)</div>
+          <div class="node-sub">Speaks via web / phone call</div>
+          <div class="node-latency-pill" style="background:#dcfce7; color:#166534;">Audio In</div>
+        </div>
+
+        <!-- Arrow 1 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 2. VAD -->
+        <div class="voice-node-card bg-blue-light">
+          <div class="node-icon">🎤</div>
+          <div class="node-title">1. VAD Gating</div>
+          <div class="node-sub">16kHz downsampling &amp; silence gating</div>
+          <div class="node-latency-pill" style="background:#dbeafe; color:#1e40af;">~15 ms</div>
+        </div>
+
+        <!-- Arrow 2 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 3. Local Whisper -->
+        <div class="voice-node-card bg-blue-light">
+          <div class="node-icon">🎙️</div>
+          <div class="node-title">2. Local Whisper</div>
+          <div class="node-sub">faster-whisper (small.en) offline GPU</div>
+          <div class="node-latency-pill" style="background:#dbeafe; color:#1e40af;">~90 ms</div>
+        </div>
+
+        <!-- Arrow 3 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 4. Inbound Guardrail -->
+        <div class="voice-node-card bg-amber-light" style="border: 2px solid #f59e0b;">
+          <div class="node-icon">🛡️</div>
+          <div class="node-title" style="color: #92400e;">3. Inbound Guard</div>
+          <div class="node-sub">Masks Phone/Cards &bull; Blocks Injection</div>
+          <div class="node-latency-pill" style="background:#fef3c7; color:#92400e;">~35 ms</div>
+        </div>
+
+        <!-- Arrow 4 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 5. Local Brain -->
+        <div class="voice-node-card bg-purple-light" style="border: 2px solid #8b5cf6;">
+          <div class="node-icon">🧠</div>
+          <div class="node-title" style="color: #6b21a8;">4. Llama 3B Brain</div>
+          <div class="node-sub">QAOA Prompt + RAG + Tool Invocation</div>
+          <div class="node-latency-pill" style="background:#f3e8ff; color:#6b21a8;">~120 ms</div>
+        </div>
+
+        <!-- Arrow 5 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 6. Outbound Guardrail -->
+        <div class="voice-node-card bg-rose-light" style="border: 2px solid #f43f5e;">
+          <div class="node-icon">🛡️</div>
+          <div class="node-title" style="color: #9f1239;">5. Outbound Guard</div>
+          <div class="node-sub">Cross-caller leak filter &bull; RAG audit</div>
+          <div class="node-latency-pill" style="background:#ffe4e6; color:#9f1239;">~30 ms</div>
+        </div>
+
+        <!-- Arrow 6 -->
+        <div class="svg-arrow-cell">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12 h12 M12 6 l6 6 -6 6" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- 7. Local Piper TTS -->
+        <div class="voice-node-card bg-cyan-light">
+          <div class="node-icon">🔊</div>
+          <div class="node-title">6. Piper Neural TTS</div>
+          <div class="node-sub">Offline ONNX &bull; Gapless audio streaming</div>
+          <div class="node-latency-pill" style="background:#cffafe; color:#0e7490;">~35 ms</div>
+        </div>
+      </div>
+
+      <!-- Caller Privacy & Data Isolation Perimeter Box -->
+      <div class="guardrail-security-box">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">🔒</span>
+          <span><strong>Zero Cross-Caller Leakage Guarantee:</strong> Every caller receives an isolated ephemeral <span style="font-family:'JetBrains Mono'; background:#fde68a; padding:1px 4px; border-radius:3px;">caller_session_id</span>. Sensitive PII is replaced with reversible session tokens.</span>
+        </div>
+        <div style="font-family:'JetBrains Mono'; font-size: 10px; background: #ffffff; padding: 3px 8px; border-radius: 5px; border: 1px solid #fde68a; color: #78350f;">
+          SQL RLS: WHERE client_id = ? AND session_id = ?
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row: Container 4 (Solving 1,000 Docker Images Redundancy) -->
+    <div class="bottom-row">
+
+      <!-- Left: The Problem Analysis -->
+      <div class="section-container" style="border-top: 3px solid #dc2626;">
+        <div class="container-title">
+          <span>⚠️ The 1,000 Docker Images Problem</span>
+          <span class="tag" style="background:#fee2e2; color:#991b1b;">Redundancy</span>
+        </div>
+        <div style="font-size: 11px; color: #475569; margin-bottom: 4px;">
+          500 clients &times; 2 agents = <strong>1,000 Docker images</strong>. Baking weights into every image duplicates Linux + Whisper (1.5GB) + Llama (2.5GB) + Piper (100MB) = <strong>~6 GB per image!</strong>
+        </div>
+
+        <table class="table-clean">
+          <thead>
+            <tr>
+              <th>Architecture Metric</th>
+              <th>Naive (1 Image/Agent)</th>
+              <th>Universal Runtime</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Total Images Built</td>
+              <td><span class="text-danger">1,000 images</span></td>
+              <td><span class="text-success">Exactly 1 Base Image</span></td>
+            </tr>
+            <tr>
+              <td>Container Registry Storage</td>
+              <td><span class="text-danger">~6,000 GB (6 TB)</span></td>
+              <td><span class="text-success">~1.5 GB</span></td>
+            </tr>
+            <tr>
+              <td>Model Weight Duplication</td>
+              <td><span class="text-danger">1,000x duplicated</span></td>
+              <td><span class="text-success">0x (Shared Host Volume)</span></td>
+            </tr>
+            <tr>
+              <td>Bug Fix / Update Effort</td>
+              <td><span class="text-danger">Rebuild 1,000 images</span></td>
+              <td><span class="text-success">Rebuild 1 image once</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Right: The Solution Architecture -->
+      <div class="section-container" style="border-top: 3px solid #16a34a;">
+        <div class="container-title">
+          <span>✅ Container 4: Universal Stateless Agent Runtime (The Scalable Solution)</span>
+          <span class="tag" style="background:#dcfce7; color:#166534;">1 Base Image</span>
+        </div>
+
+        <div class="docker-flow-grid">
+          <!-- Step 1 -->
+          <div class="docker-flow-card" style="background: #eff6ff; border-color: #93c5fd;">
+            <div style="font-size: 18px;">📦</div>
+            <div style="font-size: 11px; font-weight: 700; color: #1e40af;">Universal Base Image</div>
+            <div style="font-size: 9.5px; color: #64748b;">voice-agent-runtime:latest</div>
+          </div>
+          <div class="arrow-sign">+</div>
+
+          <!-- Step 2 -->
+          <div class="docker-flow-card" style="background: #f0fdf4; border-color: #86efac;">
+            <div style="font-size: 18px;">💽</div>
+            <div style="font-size: 11px; font-weight: 700; color: #166534;">Shared Models Volume</div>
+            <div style="font-size: 9.5px; color: #64748b;">-v /models:/models:ro</div>
+          </div>
+          <div class="arrow-sign">+</div>
+
+          <!-- Step 3 -->
+          <div class="docker-flow-card" style="background: #faf5ff; border-color: #d8b4fe;">
+            <div style="font-size: 18px;">⚙️</div>
+            <div style="font-size: 11px; font-weight: 700; color: #6b21a8;">Dynamic Config Flags</div>
+            <div style="font-size: 9.5px; color: #64748b;">-e CLIENT_ID=... -e AGENT_ID=...</div>
+          </div>
+          <div class="arrow-sign">=</div>
+
+          <!-- Output -->
+          <div class="docker-flow-card" style="background: #ecfdf5; border-color: #10b981; text-align: left;">
+            <div style="font-size: 11px; font-weight: 700; color: #047857; display: flex; align-items: center; gap: 6px;">
+              <span>🚀</span> Active Isolated Voice Agent
+            </div>
+            <div style="font-size: 9.5px; color: #475569; margin-top: 2px;">
+              Bootstraps in &lt; 1 sec &bull; Zero weight duplication &bull; All 500 clients run the exact same base image.
+            </div>
+            <div class="cmd-pill" title="docker run -d -p 8000:8000 -e CLIENT_ID=c_01 -e AGENT_ID=a_01 -v /models:/models:ro voice-agent-runtime:latest">
+              $ docker run -d -p 8000:8000 -e CLIENT_ID=c_01 -e AGENT_ID=a_01 -v /models:/models:ro voice-agent-runtime:latest
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
